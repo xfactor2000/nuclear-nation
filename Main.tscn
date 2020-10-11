@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://Main.tres" type="TileSet" id=1]
 [ext_resource path="res://assets/fonts/lunchds.ttf" type="DynamicFontData" id=2]
@@ -9,6 +9,10 @@ size = 33
 font_data = ExtResource( 2 )
 
 [sub_resource type="DynamicFont" id=2]
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFont" id=3]
+size = 30
 font_data = ExtResource( 2 )
 
 [node name="Main" type="Node2D"]
@@ -46,3 +50,16 @@ margin_right = 1081.64
 margin_bottom = 182.014
 custom_fonts/font = SubResource( 2 )
 text = "Conquered"
+
+[node name="TurnLabel" type="RichTextLabel" parent="."]
+margin_left = 1761.01
+margin_top = 936.095
+margin_right = 1899.01
+margin_bottom = 973.095
+custom_fonts/normal_font = SubResource( 3 )
+bbcode_enabled = true
+bbcode_text = "[center]Turn 1[/center]"
+text = "Turn 1"
+__meta__ = {
+"_edit_use_anchors_": false
+}
