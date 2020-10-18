@@ -4,15 +4,15 @@
 [ext_resource path="res://assets/fonts/lunchds.ttf" type="DynamicFontData" id=2]
 [ext_resource path="res://Main.gd" type="Script" id=3]
 
-[sub_resource type="DynamicFont" id=3]
+[sub_resource type="DynamicFont" id=1]
 size = 30
 font_data = ExtResource( 2 )
 
-[sub_resource type="DynamicFont" id=1]
+[sub_resource type="DynamicFont" id=2]
 size = 33
 font_data = ExtResource( 2 )
 
-[sub_resource type="DynamicFont" id=2]
+[sub_resource type="DynamicFont" id=3]
 font_data = ExtResource( 2 )
 
 [node name="Main" type="Node2D"]
@@ -30,7 +30,7 @@ margin_left = 1761.01
 margin_top = 936.095
 margin_right = 1899.01
 margin_bottom = 973.095
-custom_fonts/normal_font = SubResource( 3 )
+custom_fonts/normal_font = SubResource( 1 )
 bbcode_enabled = true
 bbcode_text = "[center]Turn 1[/center]"
 text = "Turn 1"
@@ -48,7 +48,7 @@ margin_left = 877.0
 margin_top = 56.0
 margin_right = 1098.0
 margin_bottom = 96.0
-custom_fonts/normal_font = SubResource( 1 )
+custom_fonts/normal_font = SubResource( 2 )
 bbcode_enabled = true
 bbcode_text = "[center]Cheat Menu[/center]"
 tab_size = 1
@@ -62,5 +62,5 @@ margin_left = 898.638
 margin_top = 135.014
 margin_right = 1081.64
 margin_bottom = 182.014
-custom_fonts/font = SubResource( 2 )
+custom_fonts/font = SubResource( 3 )
 text = "Conquered"
