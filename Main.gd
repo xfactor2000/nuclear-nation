@@ -47,11 +47,16 @@ func accomodatePopulation(pop:int,totalPopulation:int,roads:Array,houses:Array)-
 	var newTotalPop = totalPopulation + pop
 	var existingHouseCount = houses.size()
 	var newHousesNeeded = newTotalPop / POPSPERHOUSE - existingHouseCount
-	#print(newHousesNeeded)
-	#place the houses along the existing roads or allocate new ones
+	placeHouses(newHousesNeeded,roads,houses)
 	return AccomodatePopulationResponse.new(newTotalPop,roads,houses)
 
+func _getFreeBlocks(road:Road)->PoolVector2Array:
+	return PoolVector2Array()
 
+func placeHouses(newHouses:int,roads:Array,houses:Array): #returns array of vectors
+	for road in roads:
+		var freeBlocks = _getFreeBlocks(road)
+	
 func updateTurn(t = turn):
 	accomodatePopulation(POPDELTA, totalPopulation, roads, houses)
 	drawRoads(roads)
@@ -77,6 +82,7 @@ func drawRoads(roads: Array):
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	roads.append(Road.new(Vector2(0,16),Vector2(32,16)))
+	roads.append(Road.new(Vector2(32,16),Vector2(32,24)))
 	updateTurn()
 
 
