@@ -11,6 +11,9 @@ onready var desertTilemap = get_node("DesertTileMap") as TileMap
 
 const POPDELTA = 100
 const POPSPERHOUSE=10
+const TILEMAPCELLSIZE=32
+
+var houseSizeTiles = (houseScene.instance().get_node("ActiveHouse") as Sprite).texture.get_size() / TILEMAPCELLSIZE
 
 var area  = Array()
 const AREAHEIGHT = 80
@@ -45,9 +48,9 @@ class Road:
 
 		
 class House:
-	var topLeftCoords:Vector2
-	func _init(topLeftCoords:Vector2):
-		self.topLeftCoords = topLeftCoords
+	var center_coords:Vector2
+	func _init(center_coords:Vector2):
+		self.center_coords = center_coords
 
 class AccomodatePopulationResponse:
 	var newTotalPopulation: int
@@ -73,6 +76,10 @@ func _getFreeBlocks(road:Road, houses:Array)->PoolVector2Array:
 	var response = PoolVector2Array()
 	for tile in tiles:
 		if road.isVertical():
+			var is_house_found = false
+			for house in houses:
+				var center = house.ce
+				pass
 			response.append(Vector2(tile.x-1,tile.y))
 			response.append(Vector2(tile.x+1, tile.y))
 		else:
@@ -100,12 +107,13 @@ func drawRoads(roads: Array):
 func drawHouses(houses: Array):
 	for house in houses:
 		var node = houseScene.instance() as Node2D
-		node.set_position(Vector2(house.topLeftCoords.x,house.topLeftCoords.y))
+		node.set_position(Vector2((house.center_coords.x + 1) * desertTilemap.cell_size.x,(house.center_coords.y + 1) * desertTilemap.cell_size.y))
 		desertTilemap.add_child(node)
 		
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	print(houseSizeTiles)
 	roads.append(Road.new(Vector2(0,16),Vector2(32,16)))
 	houses.append(House.new(Vector2(10,14)))
 #	roads.append(Road.new(Vector2(32,16),Vector2(32,24)))
