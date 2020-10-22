@@ -21,7 +21,7 @@ namespace nuclearnation
             this.to = to;
         }
 
-        public Array<Vector2> getTiles()
+        public Array<Vector2> GetTiles()
         {
             var to_x = to.x;
             if ((int)to_x == (int)from.x)
