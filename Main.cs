@@ -1,5 +1,5 @@
 using Godot;
-using System;
+using System.Linq;
 using Godot.Collections;
 using nuclearnation;
 
@@ -59,11 +59,20 @@ public class Main : Node2D
 
   private void UpdateTurn(ref int t)
   {
-	  t += 1;
-	  // accomodatePopulation(POPDELTA, totalPopulation, roads, houses)
-	  DrawRoads(roads);
-	  // drawHouses(houses)
-	  turnLabel.BbcodeText = $"[center]Turn {t}[/center]";
+	t += 1;
+	AccomodatePopulation(Popdelta, totalPopulation, roads);
+	DrawRoads(roads);
+	turnLabel.BbcodeText = $"[center]Turn {t}[/center]";
+  }
+
+  private void AccomodatePopulation(int popDelta, int totalPopulation, Array<Road> roads)
+  {
+	var newTotalPop = totalPopulation + popDelta;
+	int existingHouseCount = GetChildren().Cast<Node>().Count(c => c is House);
+	GD.Print(existingHouseCount);
+	// var newHousesNeeded = newTotalPop / POPSPERHOUSE - existingHouseCount
+	// placeHouses(newHousesNeeded,roads,houses)
+	// return AccomodatePopulationResponse.new(newTotalPop,roads,houses)
   }
 
   private void DrawRoads(Array<Road> roads)
@@ -95,9 +104,6 @@ public class Main : Node2D
 // 		self.newRoads = newRoads
 // 		self.newHouses = newHouses
 //
-// var roads = Array()
-// var houses = Array()
-//
 // func accomodatePopulation(pop:int,totalPopulation:int,roads:Array,houses:Array)->AccomodatePopulationResponse:
 // 	var newTotalPop = totalPopulation + pop
 // 	var existingHouseCount = houses.size()
@@ -127,13 +133,6 @@ public class Main : Node2D
 // 		for block in freeBlocks:
 // 			print("%s/%s" % [block.x, block.y])
 // 	
-//
-// func drawHouses(houses: Array):
-// 	for house in houses:
-// 		var node = houseScene.instance() as Node2D
-// 		node.set_position(Vector2((house.center_coords.x + 1) * desertTilemap.cell_size.x,(house.center_coords.y + 1) * desertTilemap.cell_size.y))
-// 		desertTilemap.add_child(node)
-// 		
 //
 
 
