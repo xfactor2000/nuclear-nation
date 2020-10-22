@@ -2,7 +2,7 @@
 
 [ext_resource path="res://Main.tres" type="TileSet" id=1]
 [ext_resource path="res://assets/fonts/lunchds.ttf" type="DynamicFontData" id=2]
-[ext_resource path="res://Main.gd" type="Script" id=3]
+[ext_resource path="res://Main.cs" type="Script" id=3]
 
 [sub_resource type="DynamicFont" id=1]
 size = 30
@@ -32,8 +32,8 @@ margin_right = 1899.01
 margin_bottom = 973.095
 custom_fonts/normal_font = SubResource( 1 )
 bbcode_enabled = true
-bbcode_text = "[center]Turn 1[/center]"
-text = "Turn 1"
+bbcode_text = "[center]Turn XX[/center]"
+text = "Turn XX"
 __meta__ = {
 "_edit_use_anchors_": false
 }

@@ -125,13 +125,5 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	if Input.is_action_just_pressed("ui_accept"):
-		turn +=1
-		updateTurn()
-		
-	if Input.is_action_just_pressed("ui_show_cheat_menu"):
-		if cheatMenu.visible:
-			cheatMenu.hide()
-		else:
-			cheatMenu.show()
+
 	
