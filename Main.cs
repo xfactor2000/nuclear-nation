@@ -27,6 +27,9 @@ public class Main : Node2D
 		cheatMenu = GetNode("CheatPanel") as Panel;
 		turnLabel = GetNode("TurnLabel") as RichTextLabel;
 		desertTilemap = GetNode("DesertTileMap") as TileMap;
+		var house = houseScene.Instance() as House;
+		AddChild(house);
+		house.Position = new Vector2(10 * desertTilemap.CellSize.x,15*desertTilemap.CellSize.y);
 		roads.Add(new Road(new Vector2(0, 16), new Vector2(32, 16)));
 		UpdateTurn(ref turn);
 	}
@@ -81,21 +84,8 @@ public class Main : Node2D
 //
 // var houseSizeTiles = (houseScene.instance().get_node("ActiveHouse") as Sprite).texture.get_size() / TILEMAPCELLSIZE
 //
-// var area  = Array()
-
-//
-
-// 	
-// 	func _init(from:Vector2, to:Vector2):
-// 		self.from=from
-// 		self.to=to
-//
 // 		
-// class House:
-// 	var center_coords:Vector2
-// 	func _init(center_coords:Vector2):
-// 		self.center_coords = center_coords
-//
+
 // class AccomodatePopulationResponse:
 // 	var newTotalPopulation: int
 // 	var newRoads: Array
@@ -137,16 +127,6 @@ public class Main : Node2D
 // 		for block in freeBlocks:
 // 			print("%s/%s" % [block.x, block.y])
 // 	
-// func updateTurn(t = turn):
-// 	accomodatePopulation(POPDELTA, totalPopulation, roads, houses)
-// 	drawRoads(roads)
-// 	drawHouses(houses)
-// 	turnLabel.bbcode_text = "[center]Turn %s[/center]" % (t +1)
-//
-// func drawRoads(roads: Array):
-// 	for road in roads:
-// 		for tile in road.getTiles():
-// 			desertTilemap.set_cell(tile.x,tile.y,1)
 //
 // func drawHouses(houses: Array):
 // 	for house in houses:
@@ -155,13 +135,7 @@ public class Main : Node2D
 // 		desertTilemap.add_child(node)
 // 		
 //
-// # Called when the node enters the scene tree for the first time.
-// func _ready():
-// 	print(houseSizeTiles)
-// 	roads.append(Road.new(Vector2(0,16),Vector2(32,16)))
-// 	houses.append(House.new(Vector2(10,14)))
-// #	roads.append(Road.new(Vector2(32,16),Vector2(32,24)))
-// 	updateTurn()
+
 
 
 	
