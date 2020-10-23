@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using Godot;
 using System.Linq;
 using Godot.Collections;
 using nuclearnation;
+
 
 public class Main : Node2D
 {
@@ -11,10 +13,9 @@ public class Main : Node2D
 	
 	private const int Popdelta = 100;
 	private const int PopsPerHouse = 10;
-	private const int Tilemapcellsize = 32;
 
-	private const int Areaheight = 80;
-	private const int Areawidth = 80;
+	private const int AreaHeight = 80;
+	private const int AreaWidth = 80;
 
 	private readonly Array<Road> roads = new Array<Road>();
 
@@ -29,8 +30,8 @@ public class Main : Node2D
 		desertTilemap = GetNode("DesertTileMap") as TileMap;
 		var house = houseScene.Instance() as House;
 		AddChild(house);
-		house.Position = new Vector2(10 * desertTilemap.CellSize.x,15*desertTilemap.CellSize.y);
-		roads.Add(new Road(new Vector2(0, 16), new Vector2(32, 16)));
+		house.Position = new Vector2(2 * desertTilemap.CellSize.x,15*desertTilemap.CellSize.y);
+		roads.Add(new Road(new Vector2(0, 16), new Vector2(8, 16)));
 		UpdateTurn(ref turn);
 	}
 
@@ -70,15 +71,22 @@ public class Main : Node2D
   {
 	var newTotalPop = totalPopulation + popDelta;
 	var existingHouseCount = GetChildren().Cast<Node>().Count(c => c is House);
-	var newHousesNeeded = newTotalPop / PopsPerHouse - existingHouseCount;
-	PlaceHouses(newHousesNeeded, roads);
+	// var newHousesNeeded = newTotalPop / PopsPerHouse - existingHouseCount;
+	var newHousesNeeded = 1;
+	for (var i = 0; i < newHousesNeeded; i++)
+	{
+		var house = houseScene.Instance() as House;
+		PlaceBuilding(house, roads);
+	}
+	
   }
 
-  private void PlaceHouses(int newHousesNeeded, Array<Road> array)
+  private void PlaceBuilding(Building building, Array<Road> roads)
   {
 	  foreach (var road in roads)
 	  {
-		  var freeBlocks = _GetFreeBlocks(road);
+		  var freeBlocks = _GetFreeBlocks(road,desertTilemap);
+		  GD.Print("Free cells on the sides of the road");
 		  foreach (var block in freeBlocks)
 		  {
 			  GD.Print($"{block.x}/{block.y}");
@@ -86,24 +94,77 @@ public class Main : Node2D
 	  }
 
   }
-
-  private Array<Vector2> _GetFreeBlocks(Road road)
+  
+  private List<Vector2> _GetFreeBlocks(Road road, TileMap tileMap)
   {
 	  var tiles = road.GetTiles();
-	  var response = new Array<Vector2>();
+	  
+	  //returns list of continuous free cell blocks
+	  var totalCells = new List<Vector2>();
+	  var totalCellBlocks = new List<Vector2>();
+	  var cellList1 = new List<Vector2>(); //left or top
+	  var cellList2 = new List<Vector2>(); //right or bottom
+	  
+	  var existingBuildings = GetChildren().Cast<Node>().Where(n => n is Building).Cast<Building>().ToList();
 	  foreach (var tile in tiles)
 	  {
+
 		  if (road.IsVertical())
 		  {
-			  response.Add(new Vector2(tile.x - 1, tile.y));
-			  response.Add(new Vector2(tile.x + 1, tile.y));
+			  totalCells.Add(new Vector2(tile.x - 1, tile.y));
+			  totalCells.Add(new Vector2(tile.x + 1, tile.y));
 		  }
 		  else
 		  {
-			  response.Add(new Vector2(tile.x, tile.y - 1));
-			  response.Add(new Vector2(tile.x, tile.y + 1));
+			  var topTile = new Vector2(tile.x, tile.y - 1);
+			  var bottomTile = new Vector2(tile.x, tile.y + 1);
+			  foreach (var building in existingBuildings)
+			  {
+				  var buildingCells = GetCellsTakenByBuilding(building,tileMap);
+				  if (buildingCells.Contains(topTile))
+				  {
+					  totalCellBlocks.AddRange(cellList1);
+					  cellList1 = new List<Vector2>();
+				  }
+				  cellList1.Add(topTile);
+				  if (buildingCells.Contains(bottomTile))
+				  {
+					  totalCellBlocks.AddRange(cellList2);
+					  cellList2 = new List<Vector2>();
+				  }
+				  cellList2.Add(bottomTile);
+			  }
+		  }
+
+		  // totalCells = totalCells.Except(cellsTakenByBuilding).ToList();
+	  }
+	  
+	  GD.Print("Free cells after subtracting existing buildings");
+	  totalCells.ForEach(c =>
+	  {
+		  GD.Print(c);
+	  });
+	  
+	  return totalCells;
+  }
+
+  private List<Vector2> GetCellsTakenByBuilding(Building building, TileMap tileMap)
+  {
+	  var buildingSizeInTiles = building.GetSizeInTiles((int) tileMap.CellSize.x);
+	  var buildingPositionInTiles = building.Position / (int) tileMap.CellSize.x;
+	  var response = new List<Vector2>();
+	  for (var x = buildingPositionInTiles.x - buildingSizeInTiles.x / 2;
+		  x < buildingPositionInTiles.x + buildingSizeInTiles.x / 2;
+		  x++)
+	  {
+		  for (var y = buildingPositionInTiles.y - buildingSizeInTiles.y / 2;
+			  y < buildingPositionInTiles.y + buildingSizeInTiles.y / 2;
+			  y++)
+		  {
+			  response.Add(new Vector2(x,y));
 		  }
 	  }
+
 	  return response;
   }
 

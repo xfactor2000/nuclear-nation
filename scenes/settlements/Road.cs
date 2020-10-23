@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 using Godot.Collections;
 using Array = System.Array;
@@ -21,7 +22,7 @@ namespace nuclearnation
             this.to = to;
         }
 
-        public Array<Vector2> GetTiles()
+        public List<Vector2> GetTiles()
         {
             var to_x = to.x;
             if ((int)to_x == (int)from.x)
@@ -35,7 +36,7 @@ namespace nuclearnation
                 to_y += 1;
             }
             
-            var response = new Array<Vector2>();
+            var response = new List<Vector2>();
             for (var x = @from.x; x < to_x; x++)
             {
                 for (var y = @from.y; y < to_y; y++)
