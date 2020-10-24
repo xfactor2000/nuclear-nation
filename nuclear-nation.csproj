@@ -6,4 +6,15 @@
   <ItemGroup>
     <Content Include=".gitignore" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.Core, Version=4.5.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>packages\FSharp.Core.4.5.2\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core.resources, Version=4.5.0.0, Culture=zh-Hant, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>packages\FSharp.Core.4.5.2\lib\net45\FSharp.Core.resources.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="FS\FS.fsproj" />
+  </ItemGroup>
 </Project>
