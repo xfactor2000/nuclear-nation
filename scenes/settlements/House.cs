@@ -1,14 +1,7 @@
 using Godot;
 
-namespace nuclearnation
+namespace nuclearnation.scenes.settlements
 {
-	public class House: Building
-	{
-
-		public override Vector2 GetSizeInTiles(int tileSize)
-		{
-			return ((Sprite) GetNode("ActiveHouse")).Texture.GetSize() / tileSize;
-		}
-		
-	}
+	public class House: FS.House.HouseFs
+	{}
 }

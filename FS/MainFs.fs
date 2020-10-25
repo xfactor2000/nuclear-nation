@@ -1,11 +1,15 @@
-﻿namespace FS
+﻿namespace nuclearnation
 
-open Godot 
+open FS.Building
+open Godot
 
 type MainFs() as this = 
     inherit Node()
     
     let turnLabel = lazy(this.GetNode(new NodePath("TurnLabel")) :?> RichTextLabel)
+    let desertTilemap = lazy(this.GetNode(new NodePath("DesertTileMap")) :?> TileMap)
+    let houseScene = ResourceLoader.Load("res://scenes/settlements/House2D.tscn") :?> PackedScene
+    let house = houseScene.Instance() :?> BuildingFs;
     let cheatMenu = lazy(this.GetNode(new NodePath("CheatPanel")) :?> Panel)
     let mutable turn = 0
     let updateTurn turn =

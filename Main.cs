@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using Godot;
 using System.Linq;
-using FS;
-using Godot.Collections;
 using nuclearnation;
+using Godot.Collections;
+using nuclearnation.scenes.settlements;
 
 
 public class Main : MainFs
