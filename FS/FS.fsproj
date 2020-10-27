@@ -53,6 +53,7 @@
         <Compile Include="MainFs.fs" />
         <Content Include=".gitignore" />
         <Content Include="packages.config" />
+        <Compile Include="RoadFs.fs" />
     </ItemGroup>
     <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
 </Project>

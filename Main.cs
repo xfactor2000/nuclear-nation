@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using Godot;
 using System.Linq;
+using FS;
 using nuclearnation;
 using Godot.Collections;
 using nuclearnation.scenes.settlements;
@@ -8,7 +11,25 @@ using nuclearnation.scenes.settlements;
 
 public class Main : MainFs
 {
-// 	private int turn = 0;
+	
+
+	public override void _Ready()
+	{
+		var road1 = new RoadFs.Road(new Vector2(0, 0), new Vector2(0, 10));
+		var road2 = new RoadFs.Road(new Vector2(0, 0), new Vector2(10, 0));
+		foreach (var tile in road1.GetTiles())
+		{
+			GD.Print($"{tile.x}/{tile.y}");
+		}
+		GD.Print("---");
+		foreach (var tile in road2.GetTiles())
+		{
+			GD.Print($"{tile.x}/{tile.y}");
+		}
+		
+	}
+
+	// 	private int turn = 0;
 // 	private int totalPopulation = 0;
 // 	private readonly PackedScene houseScene = (PackedScene) ResourceLoader.Load("res://scenes/settlements/House2D.tscn");
 // 	
