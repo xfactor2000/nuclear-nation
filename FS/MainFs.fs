@@ -1,10 +1,15 @@
 ﻿namespace nuclearnation
 
 open FS.Building
+open FS.House
+open FS.Road
 open Godot
 
 type MainFs() as this = 
     inherit Node()
+    
+    [<Literal>]
+    let PopsPerHouse = 10
     
     let turnLabel = lazy(this.GetNode(new NodePath("TurnLabel")) :?> RichTextLabel)
     let desertTilemap = lazy(this.GetNode(new NodePath("DesertTileMap")) :?> TileMap)
@@ -12,11 +17,19 @@ type MainFs() as this =
     let house = houseScene.Instance() :?> BuildingFs;
     let cheatMenu = lazy(this.GetNode(new NodePath("CheatPanel")) :?> Panel)
     let mutable turn = 0
+    
+    let mutable totalPopulation = 0
+    
+    let roads: List<Road> = []
+    
     let updateTurn turn =
-        let newTurn = turn+1
-        newTurn
+        turn + 1
     
     override this._Ready() =
+        let house = houseScene.Instance() :?> HouseFs;
+        this.AddChild(house);
+        house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y);
+//        this.AddChild(new Road(new Vector2(0, 16), new Vector2(8, 16)));
         turn <- updateTurn turn
 
     override this._Process(_) =

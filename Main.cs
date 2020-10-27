@@ -7,27 +7,28 @@ using FS;
 using nuclearnation;
 using Godot.Collections;
 using nuclearnation.scenes.settlements;
+using House = FS.House;
 
 
 public class Main : MainFs
 {
 	
-
-	public override void _Ready()
-	{
-		var road1 = new RoadFs.Road(new Vector2(0, 0), new Vector2(0, 10));
-		var road2 = new RoadFs.Road(new Vector2(0, 0), new Vector2(10, 0));
-		foreach (var tile in road1.GetTiles())
-		{
-			GD.Print($"{tile.x}/{tile.y}");
-		}
-		GD.Print("---");
-		foreach (var tile in road2.GetTiles())
-		{
-			GD.Print($"{tile.x}/{tile.y}");
-		}
-		
-	}
+	//
+	// public override void _Ready()
+	// {
+	// 	var road1 = new Road.Road(new Vector2(0, 0), new Vector2(0, 10));
+	// 	var road2 = new Road.Road(new Vector2(0, 0), new Vector2(10, 0));
+	// 	foreach (var tile in road1.GetTiles())
+	// 	{
+	// 		GD.Print($"{tile.x}/{tile.y}");
+	// 	}
+	// 	GD.Print("---");
+	// 	foreach (var tile in road2.GetTiles())
+	// 	{
+	// 		GD.Print($"{tile.x}/{tile.y}");
+	// 	}
+	// 	
+	// }
 
 	// 	private int turn = 0;
 // 	private int totalPopulation = 0;

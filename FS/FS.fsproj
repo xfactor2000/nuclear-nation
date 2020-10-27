@@ -50,10 +50,10 @@
         <Compile Include="AssemblyInfo.fs" />
         <Compile Include="BuildingFs.fs" />
         <Compile Include="HouseFs.fs" />
+        <Compile Include="Road.fs" />
         <Compile Include="MainFs.fs" />
         <Content Include=".gitignore" />
         <Content Include="packages.config" />
-        <Compile Include="RoadFs.fs" />
     </ItemGroup>
     <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
 </Project>
