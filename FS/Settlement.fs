@@ -14,7 +14,7 @@ type HouseFs() =
         (this.GetNode(new NodePath("ActiveHouse")) :?> Sprite).Texture.GetSize() / (float32 tileSize);
 
 type Road(from:Vector2,``to``:Vector2) =
-    inherit Reference()
+    inherit Node()
     
     member val from:Vector2 = from
     member val ``to``:Vector2 = ``to``
