@@ -1,8 +1,6 @@
 ﻿namespace nuclearnation
 
-open FS.Building
-open FS.House
-open FS.Road
+open FS.Settlement
 open Godot
 
 type MainFs() as this = 

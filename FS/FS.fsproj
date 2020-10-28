@@ -48,9 +48,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="AssemblyInfo.fs" />
-        <Compile Include="BuildingFs.fs" />
-        <Compile Include="HouseFs.fs" />
-        <Compile Include="Road.fs" />
+        <Compile Include="Settlement.fs" />
         <Compile Include="MainFs.fs" />
         <Content Include=".gitignore" />
         <Content Include="packages.config" />

@@ -1,6 +1,17 @@
-module FS.Road
+module FS.Settlement
 
 open Godot
+
+[<AbstractClass>]
+type BuildingFs() =
+    inherit Node2D() 
+       abstract member GetSizeInTiles: int->Vector2
+
+type HouseFs() =
+    inherit BuildingFs()
+    
+    override this.GetSizeInTiles(tileSize:int) =
+        (this.GetNode(new NodePath("ActiveHouse")) :?> Sprite).Texture.GetSize() / (float32 tileSize);
 
 type Road(from:Vector2,``to``:Vector2) =
     inherit Reference()
@@ -28,5 +39,3 @@ type Road(from:Vector2,``to``:Vector2) =
         }
         
         Seq.toList vectors
-       
-    
