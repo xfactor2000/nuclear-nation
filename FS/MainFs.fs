@@ -63,12 +63,56 @@ type MainFs() as this =
         let houseWidth = int (house.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x)
         let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
         
+        let findPlacesToBuild (buildingWidth,cells:List<Vector2>):List<List<Vector2>> =
+            let existsCheck(list1:List<Vector2>,list2:List<Vector2>):bool = not(list2.Except(list1).Any())
+            let rec tailRecursiveFindPlaces(buildingWidth,cells:List<Vector2>,acc:List<List<Vector2>>):List<List<Vector2>> =
+                match cells with
+                    | [] -> acc
+                    | head::tail -> 
+                        let startX = int head.x
+                        let endX = startX + buildingWidth - 1
+                        //need to check that the cells with given xs range exist
+                            //if yes - add them to accumulator and continue to the next cell
+                            //if no - continue to the next cell
+                        let rangeToLookFor =
+                            Seq.toList(seq{
+                                for x in [startX..endX] do yield Vector2(float32 x,head.y)
+                            })
+                        if existsCheck(cells,rangeToLookFor) then
+                            tailRecursiveFindPlaces(buildingWidth,tail,Seq.toList(acc.Append(rangeToLookFor)))
+                        else
+                            tailRecursiveFindPlaces(buildingWidth,tail,acc)
+            tailRecursiveFindPlaces(buildingWidth,cells,[])
+        
+        let getRandomBuildingPlace (availableCells:List<List<Vector2>>) =  
+            let rand = System.Random()
+            if (availableCells.Length >0) then
+                availableCells.[rand.Next(availableCells.Length)]
+            else
+                []
+        
         //trying to place a house on one side of the road
         if (road.IsVertical()  <> true) then
             let (topSide,bottomSide) = freeTiles
-            let availableCells = topSide.Except(cellsTakenByBuildings)
-            if (availableCells.Count() > houseWidth) then
-                //picking a random set of cells to place the building at
+            let availableCellsTopSide = Seq.toList(topSide.Except(cellsTakenByBuildings).OrderBy(fun c->c.x))
+            let availableCellsBottomSide = Seq.toList(bottomSide.Except(cellsTakenByBuildings).OrderBy(fun c->c.x))
+            let placesToBuildTopSide = findPlacesToBuild(houseWidth,Seq.toList(availableCellsTopSide))
+            let placesToBuildBottomSide = findPlacesToBuild(houseWidth,Seq.toList(availableCellsBottomSide))
+            let randomPlace = getRandomBuildingPlace(placesToBuildTopSide @ placesToBuildBottomSide)
+            if (not(randomPlace.IsEmpty)) then
+                this.AddChild(house)
+                let (yPosition,house) =
+                    if (randomPlace.Head.y<road.from.y) then
+                        (float32 randomPlace.Head.y * desertTilemap.Value.CellSize.y,house)
+                    else
+                        do house.Rotate(3.14159f)
+                        (float32 (randomPlace.Head.y + 1.0f)* desertTilemap.Value.CellSize.y,house)
+                house.Position <- Vector2(
+                                          float32 (randomPlace.Head.x + house.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x / 2.0f) * desertTilemap.Value.CellSize.x,
+                                          yPosition
+                                          )
+         else
+             ()
                 
         ()        
         
@@ -82,8 +126,13 @@ type MainFs() as this =
         turn <- updateTurn turn
 
     override this._Process(_) =
-        turn <- if Input.IsActionJustPressed("ui_accept") then updateTurn turn else turn
-        do putHouseOnTheMap()
+        turn <-
+            if Input.IsActionJustPressed("ui_accept") then
+                do putHouseOnTheMap()
+                updateTurn turn
+            else
+                turn
+
         turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" turn
         
         if Input.IsActionJustPressed("ui_show_cheat_menu") then
