@@ -1,5 +1,6 @@
 module FS.Settlement
 
+open System
 open Godot
 
 [<AbstractClass>]
@@ -21,6 +22,26 @@ type Road(from:Vector2,``to``:Vector2) =
     
     member this.IsVertical() =
         int from.x = int ``to``.x
+    
+    /// <summary>
+    /// This function returns two lists of free tiles alongside the road
+    /// </summary>
+    /// <returns>Two lists of free tiles alongside the road, top/bottom or left/right</returns>
+    member this.GetFreeTilesAlong():Tuple<List<Vector2>,List<Vector2>> =
+        let tiles = this.GetTiles()
+        let tilesList1 =
+                if this.IsVertical() then
+                    seq{for tile in tiles do yield Vector2(tile.x-1.0f,tile.y)}
+                else
+                    seq{for tile in tiles do yield Vector2(tile.x,tile.y-1.0f)}
+        
+        let tilesList2 =
+                if this.IsVertical() then
+                    seq{for tile in tiles do yield Vector2(tile.x+1.0f,tile.y)}
+                else
+                    seq{for tile in tiles do yield Vector2(tile.x,tile.y+1.0f)}    
+       
+        (Seq.toList tilesList1,Seq.toList tilesList2)
     
     member this.GetTiles():List<Vector2> =
         let to_x:int =
