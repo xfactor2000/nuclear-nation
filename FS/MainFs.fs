@@ -150,7 +150,6 @@ type MainFs() as this =
                 | None -> None        
         
         let tryRoad:Option<Tuple<BuildingFs,Road>> =
-            let rand = Random()
             let roads = getRoads()
             let roadsIndices =
                 Seq.toList(seq{0..roads.Count()-1})
@@ -162,7 +161,7 @@ type MainFs() as this =
                         //Here, it must return "Some" if the house was placed or "None" if it was not placed
                         let coords = tryPlaceBuilding(building,roads.[index])
                         match coords with
-                            | Some coords -> Some(building,roads.[index])
+                            | Some _ -> Some(building,roads.[index])
                             | None->None
                     )
                 randomRoad
@@ -171,7 +170,7 @@ type MainFs() as this =
                 Some(building,roads.First())
         
         match tryRoad with
-            | Some(building,road) -> Some(building)
+            | Some(building,_) -> Some(building)
             | None -> None
         
         
