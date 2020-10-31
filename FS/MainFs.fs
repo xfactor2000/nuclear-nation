@@ -23,7 +23,7 @@ type MainFs() as this =
         turn + 1
     
     let getRoads() =
-        this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Road).Cast<Road>().ToList()
+        Seq.toList(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Road).Cast<Road>())
         
     let getBuildings() =
         this.GetChildren().Cast<Node>().Where(fun (n)-> n :? BuildingFs).Cast<BuildingFs>().ToList()
@@ -61,21 +61,11 @@ type MainFs() as this =
             ysLength > xsLength
     
     /// <summary>
-    /// This function returns list of tiles alongside the road on which the building will be adjacent
+    /// This function returns Building object in case it was placed (and rotated), None if nothing
     /// </summary>
-    /// <returns>List of tiles</returns>
-    let tryPutBuildingOnMap(building:BuildingFs):Option<List<Vector2>> =
-        let road =
-            let rand = Random()
-            let roads = getRoads()
-            if (roads.Count >0) then
-                roads.[rand.Next(roads.Count)]
-            else
-                //TODO - if there are no roads, one must be generated
-                roads.First()
- 
-        
-        let freeTiles = road.GetFreeTilesAlong()
+    /// <returns>returns Building object in case it was placed (and rotated), None if nothing</returns>
+    let tryPutBuildingOnMap(building:BuildingFs):Option<BuildingFs> =
+        let freeTiles(road:Road) = road.GetFreeTilesAlong()
         let houseWidth = int (building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x)
         let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
         
@@ -86,15 +76,24 @@ type MainFs() as this =
                 match cells with
                     | [] -> acc
                     | head::tail ->
-                        //TODO - the section below needs to be changed to support both directions
-                        let startX = int head.x
-                        let endX = startX + buildingWidth - 1
+                        let (startX,endX) =
+                            if (isVertical) then
+                                (int head.x, int head.x)
+                            else
+                                (int head.x,int head.x + buildingWidth - 1)
+                        let (startY,endY) =
+                            if (isVertical) then
+                                (int head.y, int head.y + buildingWidth - 1)
+                            else
+                                (int head.y,int head.y)
                         //need to check that the cells with given xs range exist
                             //if yes - add them to accumulator and continue to the next cell
                             //if no - continue to the next cell
                         let rangeToLookFor =
                             Seq.toList(seq{
-                                for x in [startX..endX] do yield Vector2(float32 x,head.y)
+                                for x in [startX..endX] do
+                                    for y in [startY..endY] do
+                                        yield Vector2(float32 x,float32 y)
                             })
                         if existsCheck(cells,rangeToLookFor) then
                             tailRecursiveFindPlaces(buildingWidth,tail,Seq.toList(acc.Append(rangeToLookFor)))
@@ -109,62 +108,71 @@ type MainFs() as this =
             else
                 None
         //trying to place a house on one side of the road
-        let houseCoords:Option<List<Vector2>> =
-            let allTilesAlongRoad = fst freeTiles @ snd freeTiles
+        let tryPlaceBuilding(building:BuildingFs, road:Road):Option<Vector2> =
+            let allTilesAlongRoad = fst (freeTiles road) @ snd (freeTiles road)
             let isVertical = isVerticallyDirected(allTilesAlongRoad)
-            //TODO - this also one needs to be changed to support vertical roads
             let allAvailableCells =
                 allTilesAlongRoad
                 |> List.except cellsTakenByBuildings
                 |> List.sortBy (fun(c)->(if isVertical then c.x else c.y))
             let placesToBuild = findPlacesToBuild(houseWidth,Seq.toList(allAvailableCells))
             let randomPlace = getRandomBuildingPlace placesToBuild
-            //TODO - WIP
-//            let result: Option<Tuple<BuildingFs,Vector2>> = 
-//                match randomPlace with
-//                    | Some place ->
-//                        do this.AddChild(building)
-//                        if (road.IsVertical()  <> true) then
-//                            let xPosition = float32 (place.Head.x + building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x / 2.0f) * desertTilemap.Value.CellSize.x
-//                            if (place.Head.y<road.from.y) then
-//                                let yPosition =  float32 place.Head.y * desertTilemap.Value.CellSize.y
-//                                Some (building,Vector2(xPosition, yPosition))
-//                            else
-//                                let yPosition = float32 (place.Head.y + 1.0f)* desertTilemap.Value.CellSize.y
-//                                building.Rotate(3.14159f)
-//                                Some (building,Vector2(xPosition, yPosition))
-//                        else
-//                            let yPosition = float32 (place.Head.y + building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x / 2.0f) * desertTilemap.Value.CellSize.x
-//                            if (place.Head.x<road.from.x) then
-//                                let xPosition =  float32 place.Head.x * desertTilemap.Value.CellSize.y
-//                                Some (building,Vector2(xPosition, yPosition))
-//                            else
-//                                let xPosition =  (float32 place.Head.x + 1.0f) * desertTilemap.Value.CellSize.y
-//                                do building.Rotate(3.14159f)
-//                                Some (building,Vector2(xPosition, yPosition))
-//                    | None -> None
-            if (road.IsVertical()  <> true) then
+            let result: Option<Tuple<BuildingFs,Vector2>> = 
                 match randomPlace with
                     | Some place ->
                         do this.AddChild(building)
-                        let (yPosition,building) =
-                            if (place.Head.y<road.from.y) then
-                                (float32 place.Head.y * desertTilemap.Value.CellSize.y,building)
+                        if (road.IsVertical()) then
+                            let yPosition = float32 (place.Head.y + building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x / 2.0f) * desertTilemap.Value.CellSize.x
+                            if (place.Head.x<road.from.x) then
+                                do building.Rotate(-3.14159f/2.0f)
+                                let xPosition =  float32 place.Head.x * desertTilemap.Value.CellSize.y
+                                Some (building,Vector2(xPosition, yPosition))
                             else
-                                do building.Rotate(3.14159f)
-                                (float32 (place.Head.y + 1.0f)* desertTilemap.Value.CellSize.y,building)
-                        building.Position <- Vector2(
-                                                  float32 (place.Head.x + building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x / 2.0f) * desertTilemap.Value.CellSize.x,
-                                                  yPosition
-                                              )
-                    | None -> ()
-                    
-                randomPlace
+                                do building.Rotate(3.14159f/2.0f)
+                                let xPosition =  (float32 place.Head.x + 1.0f) * desertTilemap.Value.CellSize.y
+                                Some (building,Vector2(xPosition, yPosition))
+                        else
+                            let xPosition = float32 (place.Head.x + building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x / 2.0f) * desertTilemap.Value.CellSize.x
+                            if (place.Head.y<road.from.y) then
+                                let yPosition =  float32 place.Head.y * desertTilemap.Value.CellSize.y
+                                Some (building,Vector2(xPosition, yPosition))
+                            else
+                                let yPosition = float32 (place.Head.y + 1.0f)* desertTilemap.Value.CellSize.y
+                                building.Rotate(3.14159f)
+                                Some (building,Vector2(xPosition, yPosition))
+                            
+                            
+                    | None -> None
+            match result with
+                | Some (_,coords) ->
+                    do building.Position <- coords
+                    Some(coords)
+                | None -> None        
+        
+        let tryRoad:Option<Tuple<BuildingFs,Road>> =
+            let rand = Random()
+            let roads = getRoads()
+            let roadsIndices =
+                Seq.toList(seq{0..roads.Count()-1})
+                |> List.sortBy(fun(_)-> Guid.NewGuid())
+            if (roadsIndices.Count() > 0) then
+                let randomRoad =
+                    roadsIndices
+                    |> List.tryPick(fun(index)->
+                        //Here, it must return "Some" if the house was placed or "None" if it was not placed
+                        let coords = tryPlaceBuilding(building,roads.[index])
+                        match coords with
+                            | Some coords -> Some(building,roads.[index])
+                            | None->None
+                    )
+                randomRoad
             else
-             //TODO - deal with vertical roads here
-             None
-                
-        houseCoords
+                //TODO - if there are no roads, one must be generated
+                Some(building,roads.First())
+        
+        match tryRoad with
+            | Some(building,road) -> Some(building)
+            | None -> None
         
         
     override this._Ready() =
@@ -172,6 +180,7 @@ type MainFs() as this =
         this.AddChild(house);
         house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y);
         this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 32, float32 16)))
+        this.AddChild(new Road(Vector2(float32 32, float32 17), Vector2(float32 32, float32 30)))
         drawRoads()
         turn <- updateTurn turn
 
@@ -180,8 +189,8 @@ type MainFs() as this =
             if Input.IsActionJustPressed("ui_accept") then
                 let result = tryPutBuildingOnMap(houseScene.Instance() :?> HouseFs)
                 match result with 
-                    | Some _ ->
-                        let message = sprintf "Placed house"
+                    | Some building ->
+                        let message = sprintf "Placed house %f %f" building.Position.x building.Position.y
                         GD.Print(message)
                     | None -> GD.Print("No place left")
                 updateTurn turn
