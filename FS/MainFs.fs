@@ -53,6 +53,13 @@ type MainFs() as this =
                 for building in getBuildings() do yield getCellsTakenByBuilding(building,tileMap)
             }
         Seq.toList(totalCellsTaken |> Seq.concat)
+    
+    let getCellsTakenByRoads() =
+        Seq.toList(seq{
+            for road in getRoads() do
+                for tile in road.GetTiles() do
+                    yield(Vector2(tile.x,tile.y))
+        })
             
     let drawRoads() =
         for road in getRoads() do
@@ -72,8 +79,9 @@ type MainFs() as this =
     let tryPutBuildingOnMap(building:BuildingFs):Option<BuildingFs> =
         let freeTiles(road:Road) = road.GetFreeTilesAlong()
         let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
+        let cellsTakenByRoads = getCellsTakenByRoads()
         
-        let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
+        let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsTakenByRoads:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
             let existsCheck(list1:List<Vector2>,list2:List<Vector2>):bool = not(list2.Except(list1).Any())
             let isVertical = isVerticallyDirected(cellsAlongRoad)
             let rec tailRecursiveFindPlaces(building:BuildingFs,cellsAlongRoad:List<Vector2>,acc:List<List<Vector2>>):List<List<Vector2>> =
@@ -159,7 +167,7 @@ type MainFs() as this =
                         match hypotheticalBuildingCells with
                             | None ->  tailRecursiveFindPlaces(building,tail,acc)
                             | Some hCells ->
-                                    if (existsCheck(cellsAlongRoad,suggestedCellsAlongRoad) && (hCells.Count() = (hypotheticalBuildingCells.Value |> List.except cellsTakenByBuildings).Count())) then
+                                    if (existsCheck(cellsAlongRoad,suggestedCellsAlongRoad) && (hCells.Count() = (hypotheticalBuildingCells.Value |> List.except (cellsTakenByBuildings @ cellsTakenByRoads)).Count())) then
                                         tailRecursiveFindPlaces(building,tail,Seq.toList(acc.Append(suggestedCellsAlongRoad)))
                                     else
                                         tailRecursiveFindPlaces(building,tail,acc)
@@ -190,9 +198,10 @@ type MainFs() as this =
             let allAvailableCells =
                 allTilesAlongRoad
                 |> List.except cellsTakenByBuildings
+                |> List.except cellsTakenByRoads
                 |> List.sortBy (fun(c)->(if isVertical then c.x else c.y))
                 
-            let placesToBuild = findPlacesToBuildAlongRoad(road,building,cellsTakenByBuildings,Seq.toList(allAvailableCells))
+            let placesToBuild = findPlacesToBuildAlongRoad(road,building,cellsTakenByBuildings,cellsTakenByRoads,Seq.toList(allAvailableCells))
             let randomPlace = getRandomBuildingPlace placesToBuild
             let buildingCoords: Option<Tuple<BuildingFs,Vector2>> = 
                 match randomPlace with
@@ -255,8 +264,8 @@ type MainFs() as this =
         let house = houseScene.Instance() :?> HouseFs;
         this.AddChild(house);
         house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y);
-        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 32, float32 16)))
-        this.AddChild(new Road(Vector2(float32 32, float32 17), Vector2(float32 32, float32 30)))
+        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 4, float32 16)))
+        this.AddChild(new Road(Vector2(float32 4, float32 17), Vector2(float32 4, float32 20)))
         drawRoads()
         turn <- updateTurn turn
 
