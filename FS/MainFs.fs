@@ -14,7 +14,7 @@ type MainFs() as this =
     [<Literal>]
     let AreaHeightCells = 32;
     [<Literal>]
-    let AreaWidthCells = 32;
+    let AreaWidthCells = 48;
     
     let turnLabel = lazy(this.GetNode(new NodePath("TurnLabel")) :?> RichTextLabel)
     let desertTilemap = lazy(this.GetNode(new NodePath("DesertTileMap")) :?> TileMap)
@@ -79,7 +79,7 @@ type MainFs() as this =
             let rec tailRecursiveFindPlaces(building:BuildingFs,cellsAlongRoad:List<Vector2>,acc:List<List<Vector2>>):List<List<Vector2>> =
                 let buildingWidth = int(building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x) 
                 let buildingHeight = int(building.GetSizeInTiles(int desertTilemap.Value.CellSize.y).y) 
-                let getHypotheticalBuildingCells(road:Road, suggestedCellsAlongsideRoad: List<Vector2>):List<Vector2>=
+                let getHypotheticalBuildingCells(road:Road, suggestedCellsAlongsideRoad: List<Vector2>):Option<List<Vector2>>=
                     let directionToBuildCells = 
                         if road.IsVertical() then
                             if suggestedCellsAlongsideRoad.Head.x< road.from.x then
@@ -91,60 +91,47 @@ type MainFs() as this =
                                 -1
                             else
                                 1
-                                
+                     
                     let (xFrom:int,xTo:int) =
                        if road.IsVertical() then
+                            let startX = int(suggestedCellsAlongsideRoad.Head.x)
                             let stopX = int(suggestedCellsAlongsideRoad.Head.x)+(directionToBuildCells*(buildingHeight-1))
-                            //checking for boundaries
-                            (int(suggestedCellsAlongsideRoad.Head.x),(
-                                                                if stopX<0 then
-                                                                        0
-                                                                    else
-                                                                        if stopX> AreaWidthCells then 
-                                                                            AreaWidthCells
-                                                                        else
-                                                                            stopX
-                                                                ))
+                            (startX,stopX)
                        else
                             //we want to leave at least one extra space on both sides of the building to accomodate for roads and such
                             let startX:int = int(suggestedCellsAlongsideRoad.Head.x)-1
                             let stopX:int =  int((suggestedCellsAlongsideRoad |> List.last).x)+1
-                            //checking for boundaries
-                            ((if startX<0 then 0 else startX),(if stopX > AreaWidthCells then AreaWidthCells else stopX))
+                            (startX,stopX)
                     let (yFrom,yTo) =
                        if road.IsVertical() then
                             //we want to leave at least one extra space on both sides of the building to accomodate for roads and such
                             let startY = int(suggestedCellsAlongsideRoad.Head.y)-1
                             let stopY = int((suggestedCellsAlongsideRoad |> List.last).y)+1
-                            ((if startY<0 then 0 else startY),(if stopY > AreaHeightCells then AreaHeightCells else stopY))
+                            (startY,stopY)
                        else
                             //we want to leave at least one extra space on both sides of the building to accomodate for roads and such
+                            let startY = int(suggestedCellsAlongsideRoad.Head.y)
                             let stopY = int(suggestedCellsAlongsideRoad.Head.y)+(directionToBuildCells*(buildingHeight-1))
-                            (int(suggestedCellsAlongsideRoad.Head.y),(
-                                                                if stopY<0 then
-                                                                        0
-                                                                    else
-                                                                        if stopY> AreaHeightCells then 
-                                                                            AreaWidthCells
-                                                                        else
-                                                                            stopY
-                                                                ))
+                            (startY,stopY)
                             
                     let startCellX = if xFrom < xTo then xFrom else xTo
                     let stopCellX = if xFrom < xTo then xTo else xFrom        
                     let startCellY = if yFrom < yTo then yFrom else yTo
                     let stopCellY = if yFrom < yTo then yTo else yFrom
                    
-                    
-                    let cells =
-                        seq{
-                            for x in [startCellX..stopCellX] do
-                                for y in [startCellY..stopCellY] do
-                                    yield Vector2(float32 x,float32 y)
+                    //if the building turns out to be outside of the map - do not place it
+                    if startCellX<0 || stopCellX>AreaWidthCells || startCellY <0 || stopCellY>AreaHeightCells then
+                        None 
+                    else
+                        let cells =
+                            seq{
+                                for x in [startCellX..stopCellX] do
+                                    for y in [startCellY..stopCellY] do
+                                        yield Vector2(float32 x,float32 y)
+                                
+                            }
                             
-                        }
-                        
-                    Seq.toList(cells)
+                        Some(Seq.toList(cells))
                     
                 match cellsAlongRoad with
                     | [] -> acc
@@ -169,10 +156,13 @@ type MainFs() as this =
                                         yield Vector2(float32 x,float32 y)
                             })
                         let hypotheticalBuildingCells = getHypotheticalBuildingCells(road,suggestedCellsAlongRoad)
-                        if (existsCheck(cellsAlongRoad,suggestedCellsAlongRoad) && (hypotheticalBuildingCells.Count() = (hypotheticalBuildingCells |> List.except cellsTakenByBuildings).Count())) then
-                            tailRecursiveFindPlaces(building,tail,Seq.toList(acc.Append(suggestedCellsAlongRoad)))
-                        else
-                            tailRecursiveFindPlaces(building,tail,acc)
+                        match hypotheticalBuildingCells with
+                            | None ->  tailRecursiveFindPlaces(building,tail,acc)
+                            | Some hCells ->
+                                    if (existsCheck(cellsAlongRoad,suggestedCellsAlongRoad) && (hCells.Count() = (hypotheticalBuildingCells.Value |> List.except cellsTakenByBuildings).Count())) then
+                                        tailRecursiveFindPlaces(building,tail,Seq.toList(acc.Append(suggestedCellsAlongRoad)))
+                                    else
+                                        tailRecursiveFindPlaces(building,tail,acc)
             tailRecursiveFindPlaces(building,cellsAlongRoad,[])
         
         let getRandomBuildingPlace(availableCells:List<List<Vector2>>):Option<List<Vector2>> =  
