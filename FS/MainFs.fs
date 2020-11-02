@@ -173,12 +173,25 @@ type MainFs() as this =
                 None
         //trying to place a house on one side of the road
         let tryPlaceBuilding(building:BuildingFs, road:Road):Option<Vector2> =
-            let allTilesAlongRoad = fst (freeTiles road) @ snd (freeTiles road)
-            let isVertical = isVerticallyDirected(allTilesAlongRoad)
+            let (freeTiles1,freeTiles2) = freeTiles road
+            let isVertical = isVerticallyDirected(freeTiles1)
+            //removing first and last elements to free up space for possible intersection. This seems wasteful but turns out it's not that bad:
+            //https://stackoverflow.com/questions/29100251/how-to-take-sublist-without-first-and-last-item-with-f
+            let sortAndTrimTiles(tiles:List<Vector2>) =
+                tiles
+                    |> List.sortBy (fun(c)->(if isVertical then c.x else c.y))
+                    |> List.tail
+                    |> List.rev
+                    |> List.tail
+                    |> List.rev
+            
+            let allTilesAlongRoad = (sortAndTrimTiles freeTiles1) @ (sortAndTrimTiles freeTiles2)
+           
             let allAvailableCells =
                 allTilesAlongRoad
                 |> List.except cellsTakenByBuildings
                 |> List.sortBy (fun(c)->(if isVertical then c.x else c.y))
+                
             let placesToBuild = findPlacesToBuildAlongRoad(road,building,cellsTakenByBuildings,Seq.toList(allAvailableCells))
             let randomPlace = getRandomBuildingPlace placesToBuild
             let buildingCoords: Option<Tuple<BuildingFs,Vector2>> = 
