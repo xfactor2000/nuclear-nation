@@ -84,6 +84,7 @@ type MainFs() as this =
         let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsTakenByRoads:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
             let existsCheck(list1:List<Vector2>,list2:List<Vector2>):bool = not(list2.Except(list1).Any())
             let isVertical = isVerticallyDirected(cellsAlongRoad)
+            let totalCellsTaken = cellsTakenByBuildings @ cellsTakenByRoads
             let rec tailRecursiveFindPlaces(building:BuildingFs,cellsAlongRoad:List<Vector2>,acc:List<List<Vector2>>):List<List<Vector2>> =
                 let buildingWidth = int(building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x) 
                 let buildingHeight = int(building.GetSizeInTiles(int desertTilemap.Value.CellSize.y).y) 
@@ -99,25 +100,44 @@ type MainFs() as this =
                                 -1
                             else
                                 1
-                     
+                   
                     let (xFrom:int,xTo:int) =
                        if road.IsVertical() then
                             let startX = int(suggestedCellsAlongsideRoad.Head.x)
                             let stopX = int(suggestedCellsAlongsideRoad.Head.x)+(directionToBuildCells*(buildingHeight-1))
                             (startX,stopX)
                        else
-                            //we want to leave at least one extra space on both sides of the building to accomodate for roads and such
-                            let startX:int = int(suggestedCellsAlongsideRoad.Head.x)-1
-                            let stopX:int =  int((suggestedCellsAlongsideRoad |> List.last).x)+1
+                            //TODO - this leaving of extra spaces must be fixed in order to let buildings build on short roads 
+                            //we want to leave at least one extra space on both sides of the building to accomodate for roads and such (only if there's actual structure already
+                            //placed there)
+                            let startX:int =
+                                if totalCellsTaken.Contains(Vector2(suggestedCellsAlongsideRoad.Head.x-1.0f,suggestedCellsAlongsideRoad.Head.y)) then
+                                    int(suggestedCellsAlongsideRoad.Head.x)-1
+                                else
+                                    int(suggestedCellsAlongsideRoad.Head.x)
+                            let stopX:int =
+                                if totalCellsTaken.Contains(Vector2((suggestedCellsAlongsideRoad |> List.last).x+1.0f,suggestedCellsAlongsideRoad.Head.y)) then
+                                    int((suggestedCellsAlongsideRoad |> List.last).x)+1
+                                else
+                                    int((suggestedCellsAlongsideRoad |> List.last).x)
                             (startX,stopX)
                     let (yFrom,yTo) =
                        if road.IsVertical() then
-                            //we want to leave at least one extra space on both sides of the building to accomodate for roads and such
-                            let startY = int(suggestedCellsAlongsideRoad.Head.y)-1
-                            let stopY = int((suggestedCellsAlongsideRoad |> List.last).y)+1
+                            //TODO - this leaving of extra spaces must be fixed in order to let buildings build on short roads 
+                            //we want to leave at least one extra space on both sides of the building to accomodate for roads and such (only if there's actual structure already
+                            //placed there)
+                            let startY =
+                                if totalCellsTaken.Contains(Vector2(suggestedCellsAlongsideRoad.Head.x,suggestedCellsAlongsideRoad.Head.y-1.0f)) then
+                                     int(suggestedCellsAlongsideRoad.Head.y)-1
+                                else
+                                     int(suggestedCellsAlongsideRoad.Head.y)
+                            let stopY =
+                                if totalCellsTaken.Contains(Vector2(suggestedCellsAlongsideRoad.Head.x,suggestedCellsAlongsideRoad.Head.y+1.0f)) then
+                                     int((suggestedCellsAlongsideRoad |> List.last).y)+1
+                                else
+                                     int(suggestedCellsAlongsideRoad.Head.y)
                             (startY,stopY)
                        else
-                            //we want to leave at least one extra space on both sides of the building to accomodate for roads and such
                             let startY = int(suggestedCellsAlongsideRoad.Head.y)
                             let stopY = int(suggestedCellsAlongsideRoad.Head.y)+(directionToBuildCells*(buildingHeight-1))
                             (startY,stopY)
@@ -260,7 +280,7 @@ type MainFs() as this =
             | None -> None
         
         
-    override this._Ready() =
+    override this._Ready() =                
         let house = houseScene.Instance() :?> HouseFs;
         this.AddChild(house);
         house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y);
@@ -271,7 +291,7 @@ type MainFs() as this =
 
     override this._Process(_) =
         turn <-
-            if Input.IsActionJustPressed("ui_accept") then
+//            if Input.IsActionJustPressed("ui_accept") then
                 let result = tryPutBuildingOnMap(houseScene.Instance() :?> HouseFs)
                 match result with 
                     | Some building ->
@@ -279,8 +299,8 @@ type MainFs() as this =
                         GD.Print(message)
                     | None -> GD.Print("No place left")
                 updateTurn turn
-            else
-                turn
+//            else
+//                turn
 
         turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" turn
         
