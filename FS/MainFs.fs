@@ -77,9 +77,8 @@ type MainFs() as this =
         let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
         let cellsTakenByRoads = getCellsTakenByRoads()
         
-        let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsTakenByRoads:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
+        let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
             let existsCheck(list1:List<Vector2>,list2:List<Vector2>):bool = not(list2.Except(list1).Any())
-            let totalCellsTaken = cellsTakenByBuildings @ cellsTakenByRoads
             let rec tailRecursiveFindPlaces(building:BuildingFs,cellsAlongRoad:List<Vector2>,acc:List<List<Vector2>>):List<List<Vector2>> =
                 let buildingWidth = int(building.GetSizeInTiles(int desertTilemap.Value.CellSize.x).x) 
                 let buildingHeight = int(building.GetSizeInTiles(int desertTilemap.Value.CellSize.y).y) 
@@ -172,7 +171,7 @@ type MainFs() as this =
                         match hypotheticalBuildingCellsIncludingBorders with
                             | None ->  tailRecursiveFindPlaces(building,tail,acc)
                             | Some hCells ->
-                                    if (existsCheck(cellsAlongRoad,suggestedCellsAlongRoad) && (hCells.Count() = (hypotheticalBuildingCellsIncludingBorders.Value |> List.except (cellsTakenByBuildings @ cellsTakenByRoads)).Count())) then
+                                    if (existsCheck(cellsAlongRoad,suggestedCellsAlongRoad) && (hCells.Count() = (hypotheticalBuildingCellsIncludingBorders.Value |> List.except (cellsTakenByBuildings)).Count())) then
                                         tailRecursiveFindPlaces(building,tail,Seq.toList(acc.Append(suggestedCellsAlongRoad)))
                                     else
                                         tailRecursiveFindPlaces(building,tail,acc)
@@ -206,7 +205,7 @@ type MainFs() as this =
                 |> List.except cellsTakenByRoads
                 |> List.sortBy (fun(c)->(if isVertical then c.x else c.y))
                 
-            let placesToBuild = findPlacesToBuildAlongRoad(road,building,cellsTakenByBuildings,cellsTakenByRoads,Seq.toList(allAvailableCells))
+            let placesToBuild = findPlacesToBuildAlongRoad(road,building,cellsTakenByBuildings,Seq.toList(allAvailableCells))
             let randomPlace = getRandomBuildingPlace placesToBuild
             let buildingCoords: Option<Tuple<BuildingFs,Vector2>> = 
                 match randomPlace with
