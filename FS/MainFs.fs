@@ -239,7 +239,7 @@ type MainFs() as this =
                     Some(coords)
                 | None -> None        
         
-        let tryRoad:Option<Tuple<BuildingFs,Road>> =
+        let tryPlacingBuildingOnRandomRoad(building:BuildingFs):Option<Tuple<BuildingFs,Road>> =
             let roads = getRoads()
             let roadsIndices =
                 Seq.toList(seq{0..roads.Count()-1})
@@ -256,23 +256,142 @@ type MainFs() as this =
                     )
                 randomRoad
             else
-                //TODO - if there are no roads, one must be generated
-                Some(building,roads.First())
+                None
         
-        match tryRoad with
+                        
+        //take random road
+        //find a random free spot on this road
+        //pick a random destination (up/down/left/right/continue)
+        //check if a minimal length road (let's say 8 tiles) can be generated
+            //if yes then
+                //try to add random amount of tiles
+                //check if you hit the building or moved beyond the map boundaries
+                //if yes then
+                    //work backwards until you no longer hit the building
+                //place the road
+            //if no then
+                //pick another spot
+        let createRoadForBuilding(building:BuildingFs):Option<Road> =
+            let roads = getRoads()
+            let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
+            //shuffling the roads array to pick a random one each time
+            let roads =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(roads, roads.Length))
+            let rec tryCreateRoadForBuilding(roads:List<Road>,building:BuildingFs):Option<Road> =
+                 //accepts a road and a shuffled list of its tiles. Goes over each one one by one
+                 let rec tryFindFreeSpot(road:Road, shuffledTiles:List<MapTile>)=
+                     match shuffledTiles with
+                        | [] -> None
+                        | tile::tail ->
+                            //returns one or two tiles to start building the road from
+                            let tryFreeStartRoadTiles(tile:MapTile):Tuple<Option<MapTile>,Option<MapTile>> = 
+                                if (road.IsVertical()) then
+                                    let tile1 =
+                                            let tryCell = MapTile(tile.x-1.0f,tile.y)
+                                            if (cellsTakenByBuildings.Contains(tryCell)) then
+                                                None
+                                            else
+                                                Some(tryCell)
+                                       
+                                    let tile2 =
+                                            let tryCell = MapTile(tile.x+1.0f,tile.y)
+                                            if (cellsTakenByBuildings.Contains(tryCell)) then
+                                                None
+                                            else
+                                                Some(tryCell)
+                                    (tile1,tile2)
+                                else
+                                    let tile1 =
+                                            let tryCell = MapTile(tile.x,tile.y-1.0f)
+                                            if (cellsTakenByBuildings.Contains(tryCell)) then
+                                                None
+                                            else
+                                                Some(tryCell)
+                                       
+                                    let tile2 =
+                                            let tryCell = MapTile(tile.x,tile.y+1.0f)
+                                            if (cellsTakenByBuildings.Contains(tryCell)) then
+                                                None
+                                            else
+                                                Some(tryCell)
+                                    (tile1,tile2)
+                            
+                            let (tile1,tile2) = tryFreeStartRoadTiles(tile)
+                            //we found at least one possibility to build a new road from this spot
+                            if (tile1.IsSome || tile2.IsSome ) then
+                                Some(tile)
+                            else tryFindFreeSpot(road,tail)
+                 
+                 //tries to build a new road based on a free tile provided
+                 //returns new road built
+                 let tryBuildRoad(road,freeTileOnRoad):Option<Road> =
+                     //TODO - implement random lengths for roads
+                     //TODO - check that map bounds are not violated
+                     let minRoadLengthTiles = 8.0f
+                     let directions = [-1.0f;1.0f] //up/bottom or left/right
+                     let shuffledDirections =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(directions, directions.Length))
+                     let rec tryBuildRoad(road:Road,freeTileOnRoad:MapTile,shuffledDirections) =
+                        match shuffledDirections with
+                            | [] -> None
+                            | direction::tailDirections ->
+                                let xFrom = freeTileOnRoad.x
+                                let yFrom = freeTileOnRoad.y
+                                let xTo =
+                                    if road.IsVertical() then xFrom + (xFrom+minRoadLengthTiles) * direction else xFrom
+                                let yTo =
+                                    if road.IsVertical() then yFrom else yFrom + (yFrom+minRoadLengthTiles) * direction
+                                
+                                let finalXFrom = if xFrom < xTo then xFrom else xTo
+                                let finalXTo = if xFrom < xTo then xTo else xFrom
+                                let finalYFrom = if yFrom < yTo then yFrom else yTo
+                                let finalYTo = if yFrom < yTo then yTo else yFrom
+                                
+                                
+                                let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo))
+                                let tiles = road.GetTiles()
+                                if tiles.Except(cellsTakenByBuildings).Count() = tiles.Count() then
+                                    Some(roadCandidate)
+                                else
+                                    roadCandidate.QueueFree()
+                                    tryBuildRoad(road,freeTileOnRoad,tailDirections)
+                                    
+                     
+                     tryBuildRoad(road,freeTileOnRoad,shuffledDirections)
+                         
+                 
+                 match roads with
+                    | [] -> None
+                    | road::tail ->
+                        let tiles = road.GetTiles()
+                        let shuffledTiles =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(tiles, tiles.Count()))
+                        let freeSpot:Option<MapTile> = tryFindFreeSpot(road,shuffledTiles)
+                        match freeSpot with
+                            | None -> tryCreateRoadForBuilding(tail,building)
+                            | Some tile -> tryBuildRoad(road,tile)
+            
+            tryCreateRoadForBuilding(roads,building)
+           
+
+            
+        match tryPlacingBuildingOnRandomRoad(building) with
             | Some(building,_) -> Some(building)
-            | None -> None
+            | None ->
+                let road = createRoadForBuilding(building)
+                match road with
+                    | None -> None
+                    | Some road ->
+                        do this.AddChild(road)
+                        Some(building)
         
         
     override this._Ready() =                
         let house = houseScene.Instance() :?> HouseFs;
         this.AddChild(house);
         house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y)
-        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 40, float32 16)))
-        this.AddChild(new Road(Vector2(float32 20, float32 10), Vector2(float32 20, float32 30)))
-//        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 4, float32 16)))
+//        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 40, float32 16)))
+//        this.AddChild(new Road(Vector2(float32 20, float32 10), Vector2(float32 20, float32 30)))
+//        this.AddChild(new Road(Vector2(float32 30, float32 10), Vector2(float32 30, float32 30)))
+        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 4, float32 16)))
 //        this.AddChild(new Road(Vector2(float32 4, float32 17), Vector2(float32 4, float32 20)))
-        drawRoads()
         turn <- updateTurn turn
 
     override this._Process(_) =
@@ -289,6 +408,8 @@ type MainFs() as this =
 //                turn
 
         turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" turn
+        
+        drawRoads()
         
         if Input.IsActionJustPressed("ui_show_cheat_menu") then
             if (cheatMenu.Value.Visible) then

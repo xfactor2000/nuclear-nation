@@ -13,12 +13,13 @@ type HouseFs() =
     
     override this.GetSizeInTiles(tileSize:int) =
         (this.GetNode(new NodePath("ActiveHouse")) :?> Sprite).Texture.GetSize() / (float32 tileSize);
+type MapTile = Vector2
 
-type Road(from:Vector2,``to``:Vector2) =
+type Road(from:MapTile,``to``:MapTile) =
     inherit Node()
     
-    member val from:Vector2 = from
-    member val ``to``:Vector2 = ``to``
+    member val from:MapTile = from
+    member val ``to``:MapTile = ``to``
     
     member this.IsVertical() =
         int from.x = int ``to``.x
@@ -27,7 +28,7 @@ type Road(from:Vector2,``to``:Vector2) =
     /// This function returns two lists of free tiles alongside the road
     /// </summary>
     /// <returns>Two lists of free tiles alongside the road, top/bottom or left/right</returns>
-    member this.GetFreeTilesAlong():Tuple<List<Vector2>,List<Vector2>> =
+    member this.GetFreeTilesAlong():Tuple<List<MapTile>,List<MapTile>> =
         let tiles = this.GetTiles()
         let tilesList1 =
                 if this.IsVertical() then
@@ -43,7 +44,7 @@ type Road(from:Vector2,``to``:Vector2) =
        
         (Seq.toList tilesList1,Seq.toList tilesList2)
     
-    member this.GetTiles():List<Vector2> =
+    member this.GetTiles():List<MapTile> =
         let to_x:int =
             let tmp_to_x = int (if ((int)``to``.x = (int)from.x) then int ``to``.x + 1 else int ``to``.x)
             if (this.IsVertical() = false) then tmp_to_x else tmp_to_x - 1
@@ -54,9 +55,9 @@ type Road(from:Vector2,``to``:Vector2) =
         let xs = seq{for i in int from.x .. to_x do yield i}
         let ys = seq{for i in int from.y .. to_y do yield i}
         
-        let vectors = seq {
+        let tiles = seq {
             for x in xs do
-                for y in ys do yield Vector2(float32 x,float32 y)
+                for y in ys do yield MapTile(float32 x,float32 y)
         }
         
-        Seq.toList vectors
+        Seq.toList tiles
