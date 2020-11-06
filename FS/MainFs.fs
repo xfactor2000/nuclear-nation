@@ -5,16 +5,20 @@ open FS.Settlement
 open Godot
 open System.Linq
 
+
+type DirectionEnum = TopLeft= -1 | BottomRight = 1 | Continue = 0
+
 type MainFs() as this = 
     inherit Node()
+    
     
     [<Literal>] 
     let PopsPerHouse = 10
     
     [<Literal>]
-    let AreaHeightCells = 32;
+    let AreaHeightCells = 30;
     [<Literal>]
-    let AreaWidthCells = 48;
+    let AreaWidthCells = 40;
     
     let turnLabel = lazy(this.GetNode(new NodePath("TurnLabel")) :?> RichTextLabel)
     let desertTilemap = lazy(this.GetNode(new NodePath("DesertTileMap")) :?> TileMap)
@@ -184,12 +188,12 @@ type MainFs() as this =
             else
                 None
         //trying to place a house on one side of the road
-        let tryPlaceBuilding(building:BuildingFs, road:Road):Option<Vector2> =
+        let tryPlaceBuilding(building:BuildingFs, road:Road):Option<MapTile> =
             let (freeTiles1,freeTiles2) = freeTiles road
             let isVertical = road.IsVertical()
             //removing first and last elements to free up space for possible intersection. This seems wasteful but turns out it's not that bad:
             //https://stackoverflow.com/questions/29100251/how-to-take-sublist-without-first-and-last-item-with-f
-            let sortAndTrimTiles(tiles:List<Vector2>) =
+            let sortAndTrimTiles(tiles:List<MapTile>) =
                 tiles
                     |> List.sortBy (fun(c)->(if isVertical then c.x else c.y))
                     |> List.tail
@@ -260,118 +264,103 @@ type MainFs() as this =
         
                         
         //take random road
-        //find a random free spot on this road
+        //take the spot at the end of the road
         //pick a random destination (up/down/left/right/continue)
-        //check if a minimal length road (let's say 8 tiles) can be generated
+        //check if a minimal length road (let's say 8 tiles) can be generated without hitting a building or another road
             //if yes then
-                //try to add random amount of tiles
-                //check if you hit the building or moved beyond the map boundaries
-                //if yes then
-                    //work backwards until you no longer hit the building
-                //place the road
+                //place the road in that direction
             //if no then
-                //pick another spot
+                //choose another direction randomly
+                    //if no direction is left then pick another road randomly
         let createRoadForBuilding(building:BuildingFs):Option<Road> =
             let roads = getRoads()
             let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
+            let cellsTakenByRoads = getCellsTakenByRoads()
             //shuffling the roads array to pick a random one each time
             let roads =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(roads, roads.Length))
             let rec tryCreateRoadForBuilding(roads:List<Road>,building:BuildingFs):Option<Road> =
-                 //accepts a road and a shuffled list of its tiles. Goes over each one one by one
-                 let rec tryFindFreeSpot(road:Road, shuffledTiles:List<MapTile>)=
-                     match shuffledTiles with
-                        | [] -> None
-                        | tile::tail ->
-                            //returns one or two tiles to start building the road from
-                            let tryFreeStartRoadTiles(tile:MapTile):Tuple<Option<MapTile>,Option<MapTile>> = 
-                                if (road.IsVertical()) then
-                                    let tile1 =
-                                            let tryCell = MapTile(tile.x-1.0f,tile.y)
-                                            if (cellsTakenByBuildings.Contains(tryCell)) then
-                                                None
-                                            else
-                                                Some(tryCell)
-                                       
-                                    let tile2 =
-                                            let tryCell = MapTile(tile.x+1.0f,tile.y)
-                                            if (cellsTakenByBuildings.Contains(tryCell)) then
-                                                None
-                                            else
-                                                Some(tryCell)
-                                    (tile1,tile2)
-                                else
-                                    let tile1 =
-                                            let tryCell = MapTile(tile.x,tile.y-1.0f)
-                                            if (cellsTakenByBuildings.Contains(tryCell)) then
-                                                None
-                                            else
-                                                Some(tryCell)
-                                       
-                                    let tile2 =
-                                            let tryCell = MapTile(tile.x,tile.y+1.0f)
-                                            if (cellsTakenByBuildings.Contains(tryCell)) then
-                                                None
-                                            else
-                                                Some(tryCell)
-                                    (tile1,tile2)
-                            
-                            let (tile1,tile2) = tryFreeStartRoadTiles(tile)
-                            //we found at least one possibility to build a new road from this spot
-                            if (tile1.IsSome || tile2.IsSome ) then
-                                Some(tile)
-                            else tryFindFreeSpot(road,tail)
-                 
                  //tries to build a new road based on a free tile provided
                  //returns new road built
-                 let tryBuildRoad(road,freeTileOnRoad):Option<Road> =
+                 let tryBuildRoad(road:Road,tileToBuildFrom:MapTile):Option<Road> =
                      //TODO - implement random lengths for roads
                      //TODO - check that map bounds are not violated
-                     let minRoadLengthTiles = 8.0f
-                     let directions = [-1.0f;1.0f] //up/bottom or left/right
+                     let minRoadLengthTiles = 10.0f
+                     let directions = [DirectionEnum.TopLeft; DirectionEnum.BottomRight; DirectionEnum.Continue] //up/bottom, left/right or continue
                      let shuffledDirections =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(directions, directions.Length))
-                     let rec tryBuildRoad(road:Road,freeTileOnRoad:MapTile,shuffledDirections) =
+                     let rec tryBuildRoad(road:Road,startTileOnRoad:MapTile,shuffledDirections:List<DirectionEnum>) =
                         match shuffledDirections with
                             | [] -> None
                             | direction::tailDirections ->
-                                let xFrom = freeTileOnRoad.x
-                                let yFrom = freeTileOnRoad.y
-                                let xTo =
-                                    if road.IsVertical() then xFrom + (xFrom+minRoadLengthTiles) * direction else xFrom
-                                let yTo =
-                                    if road.IsVertical() then yFrom else yFrom + (yFrom+minRoadLengthTiles) * direction
+                                let (xFrom,yFrom) =
+                                    (startTileOnRoad.x,startTileOnRoad.y)
+//                                    if (road.IsVertical()) then
+//                                        if direction = DirectionEnum.Continue then
+//                                           (startTileOnRoad.x,startTileOnRoad.x+1.0f)
+//                                        else
+//                                            (startTileOnRoad.x + 1.0f * float32 direction,startTileOnRoad.y)
+//                                    else
+//                                        if direction = DirectionEnum.Continue then
+//                                           (startTileOnRoad.x+1.0f,startTileOnRoad.y)
+//                                        else
+//                                            (startTileOnRoad.x,startTileOnRoad.y + 1.0f * float32 direction)
+                                let (xTo,yTo) =
+                                    if road.IsVertical() then
+                                        if direction = DirectionEnum.Continue then
+                                           (xFrom,yFrom+minRoadLengthTiles)
+                                        else
+                                            (xFrom + minRoadLengthTiles * float32 direction,yFrom)
+                                    else
+                                        if direction = DirectionEnum.Continue then
+                                           (xFrom+minRoadLengthTiles,yFrom)
+                                        else
+                                            (xFrom,yFrom + minRoadLengthTiles * float32 direction)
                                 
                                 let finalXFrom = if xFrom < xTo then xFrom else xTo
                                 let finalXTo = if xFrom < xTo then xTo else xFrom
                                 let finalYFrom = if yFrom < yTo then yFrom else yTo
                                 let finalYTo = if yFrom < yTo then yTo else yFrom
-                                
-                                
-                                let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo))
-                                let tiles = road.GetTiles()
-                                if tiles.Except(cellsTakenByBuildings).Count() = tiles.Count() then
-                                    Some(roadCandidate)
+                                   
+                                //checking that map bounds are not violated
+                                if (
+                                       int finalXFrom<0 ||
+                                       int finalXTo>AreaWidthCells ||
+                                       int finalYFrom<0 ||
+                                       int finalYTo>AreaHeightCells 
+                                    )
+                                then
+                                    None
                                 else
-                                    roadCandidate.QueueFree()
-                                    tryBuildRoad(road,freeTileOnRoad,tailDirections)
+                                    let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo))
+                                    let tiles = road.GetTiles()
+                                    if tiles.Except(cellsTakenByBuildings).Count() = tiles.Count() then
+                                        Some(roadCandidate)
+                                    else
+                                        roadCandidate.QueueFree()
+                                        tryBuildRoad(road,startTileOnRoad,tailDirections)
                                     
                      
-                     tryBuildRoad(road,freeTileOnRoad,shuffledDirections)
+                     tryBuildRoad(road,tileToBuildFrom,shuffledDirections)
+                   
                          
-                 
                  match roads with
                     | [] -> None
                     | road::tail ->
-                        let tiles = road.GetTiles()
-                        let shuffledTiles =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(tiles, tiles.Count()))
-                        let freeSpot:Option<MapTile> = tryFindFreeSpot(road,shuffledTiles)
-                        match freeSpot with
+                        //we're building from the end tile
+                        let endTile = road.``to``
+                        let newRoad = tryBuildRoad(road,endTile)
+                        match newRoad with
                             | None -> tryCreateRoadForBuilding(tail,building)
-                            | Some tile -> tryBuildRoad(road,tile)
+                            | Some road -> Some(road)
+                        
+//                        let tiles = road.GetTiles()
+//                        let shuffledTiles =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(tiles, tiles.Count()))
+//                        let freeSpot:Option<MapTile> = tryFindFreeSpot(road,shuffledTiles)
+//                        match freeSpot with
+//                            | None -> tryCreateRoadForBuilding(tail,building)
+//                            | Some tile -> tryBuildRoad(road,tile)
             
             tryCreateRoadForBuilding(roads,building)
            
-
-            
         match tryPlacingBuildingOnRandomRoad(building) with
             | Some(building,_) -> Some(building)
             | None ->
@@ -380,7 +369,9 @@ type MainFs() as this =
                     | None -> None
                     | Some road ->
                         do this.AddChild(road)
-                        Some(building)
+                        match tryPlaceBuilding(building,road) with
+                            | Some _-> Some(building)
+                            | None -> None
         
         
     override this._Ready() =                
@@ -404,6 +395,7 @@ type MainFs() as this =
                         GD.Print(message)
                     | None -> GD.Print("No place left")
                 updateTurn turn
+                
 //            else
 //                turn
 
