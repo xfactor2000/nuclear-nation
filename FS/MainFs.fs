@@ -18,7 +18,7 @@ type MainFs() as this =
     [<Literal>]
     let AreaHeightCells = 30;
     [<Literal>]
-    let AreaWidthCells = 40;
+    let AreaWidthCells = 50;
     
     let turnLabel = lazy(this.GetNode(new NodePath("TurnLabel")) :?> RichTextLabel)
     let desertTilemap = lazy(this.GetNode(new NodePath("DesertTileMap")) :?> TileMap)
@@ -62,7 +62,7 @@ type MainFs() as this =
         Seq.toList(seq{
             for road in getRoads() do
                 for tile in road.GetTiles() do
-                    yield(Vector2(tile.x,tile.y))
+                    yield(MapTile(tile.x,tile.y))
         })
             
     let drawRoads() =
@@ -273,18 +273,38 @@ type MainFs() as this =
                 //choose another direction randomly
                     //if no direction is left then pick another road randomly
         let createRoadForBuilding(building:BuildingFs):Option<Road> =
+            //TODO - implement random lengths for roads
+            let minRoadLengthTiles = 8.0f
             let roads = getRoads()
             let cellsTakenByBuildings = getCellsTakenByAllBuildings(desertTilemap.Value)
             let cellsTakenByRoads = getCellsTakenByRoads()
             //shuffling the roads array to pick a random one each time
             let roads =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(roads, roads.Length))
+            let roads =
+                if roads.Count() =0 then
+                    //generating first road
+                    let rand = Random()
+                    let isVertical:bool = rand.NextDouble() > 0.5
+                    let (xFrom,yFrom) =
+                        if (isVertical) then
+                            (rand.Next(AreaWidthCells-6)+3,0)
+                        else
+                            (0,rand.Next(AreaHeightCells-6)+3)
+                    let (xTo,yTo) =
+                        if (isVertical) then
+                            (xFrom,yFrom + int minRoadLengthTiles)
+                        else
+                             (xFrom + int minRoadLengthTiles,yFrom)
+                    let road = new Road(MapTile(float32 xFrom,float32 yFrom),MapTile(float32 xTo,float32 yTo))
+                    let newRoadsList = [road]
+                    this.AddChild(road)
+                    newRoadsList
+                else
+                    roads
             let rec tryCreateRoadForBuilding(roads:List<Road>,building:BuildingFs):Option<Road> =
                  //tries to build a new road based on a free tile provided
                  //returns new road built
-                 let tryBuildRoad(road:Road,tileToBuildFrom:MapTile):Option<Road> =
-                     //TODO - implement random lengths for roads
-                     //TODO - check that map bounds are not violated
-                     let minRoadLengthTiles = 10.0f
+                 let tryBuildRoad(sourceRoad:Road,tileToBuildFrom:MapTile):Option<Road> =
                      let directions = [DirectionEnum.TopLeft; DirectionEnum.BottomRight; DirectionEnum.Continue] //up/bottom, left/right or continue
                      let shuffledDirections =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(directions, directions.Length))
                      let rec tryBuildRoad(road:Road,startTileOnRoad:MapTile,shuffledDirections:List<DirectionEnum>) =
@@ -293,16 +313,6 @@ type MainFs() as this =
                             | direction::tailDirections ->
                                 let (xFrom,yFrom) =
                                     (startTileOnRoad.x,startTileOnRoad.y)
-//                                    if (road.IsVertical()) then
-//                                        if direction = DirectionEnum.Continue then
-//                                           (startTileOnRoad.x,startTileOnRoad.x+1.0f)
-//                                        else
-//                                            (startTileOnRoad.x + 1.0f * float32 direction,startTileOnRoad.y)
-//                                    else
-//                                        if direction = DirectionEnum.Continue then
-//                                           (startTileOnRoad.x+1.0f,startTileOnRoad.y)
-//                                        else
-//                                            (startTileOnRoad.x,startTileOnRoad.y + 1.0f * float32 direction)
                                 let (xTo,yTo) =
                                     if road.IsVertical() then
                                         if direction = DirectionEnum.Continue then
@@ -331,33 +341,50 @@ type MainFs() as this =
                                     None
                                 else
                                     let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo))
-                                    let tiles = road.GetTiles()
-                                    if tiles.Except(cellsTakenByBuildings).Count() = tiles.Count() then
+                                    let tiles = roadCandidate.GetTiles()
+                                    let doNotBorderScreenEdgeCondition:bool =
+                                        if roadCandidate.IsVertical() then
+                                            roadCandidate.from.x <> 0.0f && int roadCandidate.from.x <> AreaWidthCells
+                                        else
+                                            roadCandidate.from.y <> 0.0f && int roadCandidate.from.y <> AreaHeightCells
+                                    let doNotOverlayOnOtherRoadsCondition:bool =
+                                        tiles.Except(cellsTakenByBuildings).Except(cellsTakenByRoads.Where(fun(c)-> c <> startTileOnRoad)).Count() = tiles.Count()
+                                    
+                                    let buildingPlacedCondition:bool =
+                                        doNotBorderScreenEdgeCondition && doNotOverlayOnOtherRoadsCondition && 
+                                            let result = tryPlaceBuilding(building,roadCandidate)
+                                            match result with
+                                                | None -> false
+                                                | Some _ -> true
+                                        
+                                    if  doNotBorderScreenEdgeCondition && doNotOverlayOnOtherRoadsCondition && buildingPlacedCondition then
                                         Some(roadCandidate)
                                     else
                                         roadCandidate.QueueFree()
                                         tryBuildRoad(road,startTileOnRoad,tailDirections)
                                     
-                     
-                     tryBuildRoad(road,tileToBuildFrom,shuffledDirections)
+                     tryBuildRoad(sourceRoad,tileToBuildFrom,shuffledDirections)
                    
                          
                  match roads with
                     | [] -> None
                     | road::tail ->
-                        //we're building from the end tile
-                        let endTile = road.``to``
-                        let newRoad = tryBuildRoad(road,endTile)
-                        match newRoad with
-                            | None -> tryCreateRoadForBuilding(tail,building)
-                            | Some road -> Some(road)
+                        let startTiles = [road.from;road.``to``]
+                        let shuffledStartTiles =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(startTiles, startTiles.Length))
                         
-//                        let tiles = road.GetTiles()
-//                        let shuffledTiles =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(tiles, tiles.Count()))
-//                        let freeSpot:Option<MapTile> = tryFindFreeSpot(road,shuffledTiles)
-//                        match freeSpot with
-//                            | None -> tryCreateRoadForBuilding(tail,building)
-//                            | Some tile -> tryBuildRoad(road,tile)
+                        let rec tryBuildRoadFromTiles(road:Road,tiles:List<MapTile>): Option<Road>=
+                            match tiles with
+                                | [] -> None
+                                | tile::tail ->
+                                    let newRoad = tryBuildRoad(road,tile)
+                                    match newRoad with
+                                        | None -> tryBuildRoadFromTiles(road,tail)
+                                        | Some road -> Some(road)
+                                    
+                        match tryBuildRoadFromTiles(road,shuffledStartTiles) with
+                            | Some road -> Some(road)
+                            | None -> tryCreateRoadForBuilding(tail,building)
+                        
             
             tryCreateRoadForBuilding(roads,building)
            
@@ -369,35 +396,34 @@ type MainFs() as this =
                     | None -> None
                     | Some road ->
                         do this.AddChild(road)
-                        match tryPlaceBuilding(building,road) with
-                            | Some _-> Some(building)
-                            | None -> None
+                        Some(building)
+                        
         
         
     override this._Ready() =                
         let house = houseScene.Instance() :?> HouseFs;
-        this.AddChild(house);
-        house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y)
+//        this.AddChild(house);
+//        house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y)
 //        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 40, float32 16)))
 //        this.AddChild(new Road(Vector2(float32 20, float32 10), Vector2(float32 20, float32 30)))
 //        this.AddChild(new Road(Vector2(float32 30, float32 10), Vector2(float32 30, float32 30)))
-        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 4, float32 16)))
+//        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 4, float32 16)))
 //        this.AddChild(new Road(Vector2(float32 4, float32 17), Vector2(float32 4, float32 20)))
         turn <- updateTurn turn
 
     override this._Process(_) =
         turn <-
-//            if Input.IsActionJustPressed("ui_accept") then
+            if Input.IsActionJustPressed("ui_accept") then
                 let result = tryPutBuildingOnMap(houseScene.Instance() :?> HouseFs)
                 match result with 
                     | Some building ->
                         let message = sprintf "Placed house %f %f" building.Position.x building.Position.y
                         GD.Print(message)
                     | None -> GD.Print("No place left")
-                updateTurn turn
                 
-//            else
-//                turn
+                updateTurn turn
+            else
+                turn
 
         turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" turn
         
