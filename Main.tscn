@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://Main.tres" type="TileSet" id=1]
 [ext_resource path="res://assets/fonts/lunchds.ttf" type="DynamicFontData" id=2]
@@ -9,10 +9,14 @@ size = 30
 font_data = ExtResource( 2 )
 
 [sub_resource type="DynamicFont" id=2]
-size = 33
+size = 32
 font_data = ExtResource( 2 )
 
 [sub_resource type="DynamicFont" id=3]
+size = 33
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFont" id=4]
 font_data = ExtResource( 2 )
 
 [node name="Main" type="Node2D"]
@@ -30,10 +34,24 @@ margin_left = 1645.0
 margin_top = 923.0
 margin_right = 1899.0
 margin_bottom = 1002.0
+rect_pivot_offset = Vector2( 127, 15.9061 )
 custom_fonts/normal_font = SubResource( 1 )
 bbcode_enabled = true
 bbcode_text = "[center]Turn XX[/center]"
 text = "Turn XX"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="PopulationLabel" type="RichTextLabel" parent="."]
+margin_left = 311.482
+margin_top = 12.7135
+margin_right = 431.482
+margin_bottom = 48.7135
+custom_fonts/normal_font = SubResource( 2 )
+bbcode_enabled = true
+bbcode_text = "[center]0[/center]"
+text = "0"
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -48,7 +66,7 @@ margin_left = 877.0
 margin_top = 56.0
 margin_right = 1098.0
 margin_bottom = 96.0
-custom_fonts/normal_font = SubResource( 2 )
+custom_fonts/normal_font = SubResource( 3 )
 bbcode_enabled = true
 bbcode_text = "[center]Cheat Menu[/center]"
 tab_size = 1
@@ -62,5 +80,5 @@ margin_left = 898.638
 margin_top = 135.014
 margin_right = 1081.64
 margin_bottom = 182.014
-custom_fonts/font = SubResource( 3 )
+custom_fonts/font = SubResource( 4 )
 text = "Conquered"
