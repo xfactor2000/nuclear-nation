@@ -44,10 +44,10 @@ __meta__ = {
 }
 
 [node name="PopulationLabel" type="RichTextLabel" parent="."]
-margin_left = 311.482
-margin_top = 12.7135
-margin_right = 431.482
-margin_bottom = 48.7135
+margin_left = 312.542
+margin_top = 11.6541
+margin_right = 432.542
+margin_bottom = 47.6541
 custom_fonts/normal_font = SubResource( 2 )
 bbcode_enabled = true
 bbcode_text = "[center]0[/center]"
