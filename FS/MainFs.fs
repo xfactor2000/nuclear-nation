@@ -22,16 +22,9 @@ type MainFs() as this =
     let settlement:Lazy<Settlement> = lazy(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Settlement).Cast<Settlement>().First())
     
     let mutable totalPopulation = 0
-    
-    let desertTilemap = lazy(this.GetNode(new NodePath("DesertTileMap")) :?> TileMap)
-                        
-    let drawRoads() =
-        for road in settlement.Value.GetRoads() do
-            for tile in road.GetTiles() do
-                do desertTilemap.Value.SetCell(int tile.x, int tile.y, 1)
         
     override this._Ready() =
-        this.AddChild(new Settlement(desertTilemap.Value))
+        this.AddChild(new Settlement())
 //        let house = houseScene.Instance() :?> HouseFs;
 //        this.AddChild(house);
 //        house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y)
@@ -46,7 +39,6 @@ type MainFs() as this =
         turn <-
             if Input.IsActionJustPressed("ui_accept") then
                 totalPopulation<-totalPopulation + settlement.Value.AddPopulation(7)
-                settlement.Value.Population <- totalPopulation
                 updateTurn turn
             else
                 turn
@@ -54,7 +46,7 @@ type MainFs() as this =
         turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" turn
         populationLabel.Value.BbcodeText <- sprintf "[center] %d [/center]" totalPopulation
         
-        drawRoads()
+        settlement.Value.Redraw()
         
         if Input.IsActionJustPressed("ui_show_cheat_menu") then
             if (cheatMenu.Value.Visible) then

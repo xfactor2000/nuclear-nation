@@ -68,7 +68,7 @@ type Road(from:MapTile,``to``:MapTile) =
 type DirectionEnum = TopLeft= -1 | BottomRight = 1 | Continue = 0
 
 
-type Settlement(tileMap:TileMap) as this =
+type Settlement() as this =
     inherit Node()
 
     [<Literal>] 
@@ -81,6 +81,9 @@ type Settlement(tileMap:TileMap) as this =
 
 
     let houseScene = ResourceLoader.Load("res://scenes/settlements/House2D.tscn") :?> PackedScene
+    
+    let tileMap =
+       lazy(this.GetTree().Root.GetNode(new NodePath("Main/DesertTileMap")) :?> TileMap)
     
     let mutable population = 0
     
@@ -125,14 +128,14 @@ type Settlement(tileMap:TileMap) as this =
     /// <returns>returns Building object in case it was placed (and rotated), None if nothing</returns>
     let tryPutBuildingOnMap(building:BuildingFs):Option<BuildingFs> =
         let freeTiles(road:Road) = road.GetFreeTilesAlong()
-        let cellsTakenByBuildings = getCellsTakenByAllBuildings(tileMap)
+        let cellsTakenByBuildings = getCellsTakenByAllBuildings(tileMap.Value)
         let cellsTakenByRoads = getCellsTakenByRoads()
         
         let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
             let existsCheck(list1:List<Vector2>,list2:List<Vector2>):bool = not(list2.Except(list1).Any())
             let rec tailRecursiveFindPlaces(building:BuildingFs,cellsAlongRoad:List<Vector2>,acc:List<List<Vector2>>):List<List<Vector2>> =
-                let buildingWidth = int(building.GetSizeInTiles(int tileMap.CellSize.x).x) 
-                let buildingHeight = int(building.GetSizeInTiles(int tileMap.CellSize.y).y) 
+                let buildingWidth = int(building.GetSizeInTiles(int tileMap.Value.CellSize.x).x) 
+                let buildingHeight = int(building.GetSizeInTiles(int tileMap.Value.CellSize.y).y) 
                 let getHypotheticalBuildingCellsWithMargins(road:Road, suggestedCellsAlongsideRoad: List<Vector2>):Option<List<Vector2>>=
                     let directionToBuildCells = 
                         if road.IsVertical() then
@@ -262,22 +265,22 @@ type Settlement(tileMap:TileMap) as this =
                 match randomPlace with
                     | Some place ->
                         if (road.IsVertical()) then
-                            let yPosition = float32 (place.Head.y + building.GetSizeInTiles(int tileMap.CellSize.x).x / 2.0f) * tileMap.CellSize.x
+                            let yPosition = float32 (place.Head.y + building.GetSizeInTiles(int tileMap.Value.CellSize.x).x / 2.0f) * tileMap.Value.CellSize.x
                             if (place.Head.x<road.from.x) then
                                 do building.Rotate(-3.14159f/2.0f)
-                                let xPosition =  float32 place.Head.x * tileMap.CellSize.y
+                                let xPosition =  float32 place.Head.x * tileMap.Value.CellSize.y
                                 Some (building,Vector2(xPosition, yPosition))
                             else
                                 do building.Rotate(3.14159f/2.0f)
-                                let xPosition =  (float32 place.Head.x + 1.0f) * tileMap.CellSize.y
+                                let xPosition =  (float32 place.Head.x + 1.0f) * tileMap.Value.CellSize.y
                                 Some (building,Vector2(xPosition, yPosition))
                         else
-                            let xPosition = float32 (place.Head.x + building.GetSizeInTiles(int tileMap.CellSize.x).x / 2.0f) * tileMap.CellSize.x
+                            let xPosition = float32 (place.Head.x + building.GetSizeInTiles(int tileMap.Value.CellSize.x).x / 2.0f) * tileMap.Value.CellSize.x
                             if (place.Head.y<road.from.y) then
-                                let yPosition =  float32 place.Head.y * tileMap.CellSize.y
+                                let yPosition =  float32 place.Head.y * tileMap.Value.CellSize.y
                                 Some (building,Vector2(xPosition, yPosition))
                             else
-                                let yPosition = float32 (place.Head.y + 1.0f)* tileMap.CellSize.y
+                                let yPosition = float32 (place.Head.y + 1.0f)* tileMap.Value.CellSize.y
                                 building.Rotate(3.14159f)
                                 Some (building,Vector2(xPosition, yPosition))
                             
@@ -323,7 +326,7 @@ type Settlement(tileMap:TileMap) as this =
             //TODO - implement random lengths for roads
             let minRoadLengthTiles = 8.0f
             let roads = getRoads()
-            let cellsTakenByBuildings = getCellsTakenByAllBuildings(tileMap)
+            let cellsTakenByBuildings = getCellsTakenByAllBuildings(tileMap.Value)
             let cellsTakenByRoads = getCellsTakenByRoads()
             //shuffling the roads array to pick a random one each time
             let roads =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(roads, roads.Length))
@@ -445,24 +448,46 @@ type Settlement(tileMap:TileMap) as this =
                         do this.AddChild(road)
                         Some(building)
                         
+   
                         
     member this.Population
         with get () = population
         and set (value) = population <- value
+        
+
     
+    /// <summary>
+    /// This function adds population to the settlement and accomodates it by adding buildings if needed
+    /// </summary>
+    /// <returns>returns Amount of population it was able to accomodate</returns>
     member this.AddPopulation(extraPopulation: int): int =
         let newHousesNeeded:int = int (ceil(float32 (extraPopulation + population) / float32 PopsPerHouse) - ceil (float32(population) / float32(PopsPerHouse)))
         
         //returns the actual amount of population placed
-        let rec tryPlaceHouses(numberOfHouses:int, acc: int): int =
+        let rec tryPlaceHouses(numberOfHouses:int, accHouses: int): int =
             match numberOfHouses with
                 | houses when houses > 0 ->
                     let result = tryPutBuildingOnMap(houseScene.Instance() :?> HouseFs)
                     match result with
-                      | Some _ -> tryPlaceHouses(numberOfHouses - 1,acc + PopsPerHouse)
-                      | None -> tryPlaceHouses(0,acc)
-                | _ -> acc
+                      | Some _ -> tryPlaceHouses(numberOfHouses - 1,accHouses + 1 )
+                      | None -> tryPlaceHouses(0,accHouses)
+                | _ -> accHouses
         
-        tryPlaceHouses(newHousesNeeded,0)
+        let housesPlaced = tryPlaceHouses(newHousesNeeded,0)
+        
+        let populationAdded =
+            if (housesPlaced = newHousesNeeded) then
+                extraPopulation
+            else
+                housesPlaced * PopsPerHouse
+        
+        do this.Population <- this.Population + populationAdded        
+        
+        populationAdded
         
     member this.GetRoads(): List<Road> = getRoads()
+    
+    member this.Redraw(): unit =
+        for road in this.GetRoads() do
+            for tile in road.GetTiles() do
+                do tileMap.Value.SetCell(int tile.x, int tile.y, 1) 
