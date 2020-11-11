@@ -56,12 +56,17 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="CheatPanel" type="Panel" parent="."]
+[node name="CheatPanelCanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="CheatPanel" type="Panel" parent="CheatPanelCanvasLayer"]
 visible = false
 margin_right = 1920.0
 margin_bottom = 316.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
-[node name="RichTextLabel" type="RichTextLabel" parent="CheatPanel"]
+[node name="RichTextLabel" type="RichTextLabel" parent="CheatPanelCanvasLayer/CheatPanel"]
 margin_left = 877.0
 margin_top = 56.0
 margin_right = 1098.0
@@ -75,10 +80,24 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="ConquerButton" type="CheckButton" parent="CheatPanel"]
-margin_left = 898.638
-margin_top = 135.014
-margin_right = 1081.64
-margin_bottom = 182.014
+[node name="AddPopulationButton" type="Button" parent="CheatPanelCanvasLayer/CheatPanel"]
+margin_left = 886.013
+margin_top = 132.343
+margin_right = 1090.01
+margin_bottom = 154.343
 custom_fonts/font = SubResource( 4 )
-text = "Conquered"
+text = "Add 10 population"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="RemovePopulationButton" type="Button" parent="CheatPanelCanvasLayer/CheatPanel"]
+margin_left = 883.493
+margin_top = 166.991
+margin_right = 1087.49
+margin_bottom = 188.991
+custom_fonts/font = SubResource( 4 )
+text = "Remove 10 population"
+__meta__ = {
+"_edit_use_anchors_": false
+}

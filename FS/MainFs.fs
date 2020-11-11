@@ -17,13 +17,27 @@ type MainFs() as this =
     
     let populationLabel = lazy(this.GetNode(new NodePath("PopulationLabel")) :?> RichTextLabel)
     
-    let cheatMenu = lazy(this.GetNode(new NodePath("CheatPanel")) :?> Panel)
+    let cheatMenu = lazy(this.GetNode(new NodePath("CheatPanelCanvasLayer/CheatPanel")) :?> Panel)
+    
+    let addPopulationButton = lazy(cheatMenu.Value.GetNode(new NodePath("AddPopulationButton")) :?> Button)
+    
+    let removePopulationButton = lazy(cheatMenu.Value.GetNode(new NodePath("RemovePopulationButton")) :?> Button)
     
     let settlement:Lazy<Settlement> = lazy(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Settlement).Cast<Settlement>().First())
     
     let mutable totalPopulation = 0
+    
+    let mutable accumulatedPopulationDuringTurn = 0
+    
+    let _onAddPopulationButtonPressed() =
+        accumulatedPopulationDuringTurn <- accumulatedPopulationDuringTurn + 10
+        
+    let _onRemovePopulationButtonPressed() =
+        accumulatedPopulationDuringTurn <- accumulatedPopulationDuringTurn - 10
         
     override this._Ready() =
+        addPopulationButton.Value.Connect("pressed",this,"_onAddPopulationButtonPressed") |> ignore
+        removePopulationButton.Value.Connect("pressed",this,"_onRemovePopulationButtonPressed") |> ignore
         this.AddChild(new Settlement())
 //        let house = houseScene.Instance() :?> HouseFs;
 //        this.AddChild(house);
@@ -38,7 +52,8 @@ type MainFs() as this =
     override this._Process(_) =
         turn <-
             if Input.IsActionJustPressed("ui_accept") then
-                totalPopulation<-totalPopulation + settlement.Value.AddPopulation(7)
+                totalPopulation<-totalPopulation + settlement.Value.AddPopulation(accumulatedPopulationDuringTurn)
+                accumulatedPopulationDuringTurn <- 0
                 updateTurn turn
             else
                 turn
