@@ -9,10 +9,7 @@ type MainFs() as this =
     inherit Node()
 
     let mutable turn = 0
-    
-    let updateTurn turn =
-        turn + 1
-        
+
     let turnLabel = lazy(this.GetNode(new NodePath("TurnLabel")) :?> RichTextLabel)
     
     let populationLabel = lazy(this.GetNode(new NodePath("PopulationLabel")) :?> RichTextLabel)
@@ -34,11 +31,24 @@ type MainFs() as this =
         
     let _onRemovePopulationButtonPressed() =
         accumulatedPopulationDuringTurn <- accumulatedPopulationDuringTurn - 10
+    
+        
+    let updateTurn turn =
+        do totalPopulation<-totalPopulation + settlement.Value.AddPopulation(accumulatedPopulationDuringTurn)
+        do accumulatedPopulationDuringTurn <- 0
+        turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" (turn + 1)
+        populationLabel.Value.BbcodeText <- sprintf "[center] %d [/center]" totalPopulation
+        settlement.Value.Redraw()
+        this.EmitSignal("turn_complete")
+        turn + 1
+        
         
     override this._Ready() =
+        this.AddUserSignal("turn_complete")
         addPopulationButton.Value.Connect("pressed",this,"_onAddPopulationButtonPressed") |> ignore
         removePopulationButton.Value.Connect("pressed",this,"_onRemovePopulationButtonPressed") |> ignore
         this.AddChild(new Settlement())
+        accumulatedPopulationDuringTurn<-50
 //        let house = houseScene.Instance() :?> HouseFs;
 //        this.AddChild(house);
 //        house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y)
@@ -50,18 +60,9 @@ type MainFs() as this =
         turn <- updateTurn turn
 
     override this._Process(_) =
-        turn <-
-            if Input.IsActionJustPressed("ui_accept") then
-                totalPopulation<-totalPopulation + settlement.Value.AddPopulation(accumulatedPopulationDuringTurn)
-                accumulatedPopulationDuringTurn <- 0
-                updateTurn turn
-            else
-                turn
-
-        turnLabel.Value.BbcodeText <- sprintf "[center]Turn %d [/center]" turn
-        populationLabel.Value.BbcodeText <- sprintf "[center] %d [/center]" totalPopulation
-        
-        settlement.Value.Redraw()
+        if Input.IsActionJustPressed("ui_accept") then
+            turn <- updateTurn turn
+           
         
         if Input.IsActionJustPressed("ui_show_cheat_menu") then
             if (cheatMenu.Value.Visible) then

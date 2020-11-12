@@ -4,13 +4,44 @@ open System
 open Godot
 open System.Linq
 
-[<AbstractClass>]
-type BuildingFs() =
-    inherit Node2D() 
-       abstract member GetSizeInTiles: int->Vector2
+type BuildingStateEnum = Abandoned= 0 | Active = 1 
 
-type HouseFs() =
+[<AbstractClass>]
+type BuildingFs() as this =
+    inherit Node2D() 
+    
+    let mutable state = BuildingStateEnum.Active
+   
+    override this._Ready()=
+        this.AddUserSignal("turn_complete")
+    
+    member internal this.State
+        with get () = state
+        and set (value) = state <- value
+       
+    abstract member GetSizeInTiles: int->Vector2
+    abstract member Abandon: unit -> unit
+    member this.GetState():BuildingStateEnum = 
+        state
+
+type HouseFs() as this =
     inherit BuildingFs()
+    let mutable abandonedCountDown = 0
+    
+    let _onTurnComplete() =
+        abandonedCountDown<- abandonedCountDown - 1
+        if abandonedCountDown <=0 then
+            this.QueueFree()
+    
+    override this.Abandon() =
+        base.State <- BuildingStateEnum.Abandoned
+        let abandonedSprite = this.GetNode(new NodePath("AbandonedHouse")) :?> Sprite
+        let activeSprite = this.GetNode(new NodePath("ActiveHouse")) :?> Sprite
+        activeSprite.Visible <- false
+        abandonedSprite.Visible <- true
+        abandonedCountDown <- 3
+        this.Connect("turn_complete",this,"_onTurnComplete") |> ignore
+      
     
     override this.GetSizeInTiles(tileSize:int) =
         (this.GetNode(new NodePath("ActiveHouse")) :?> Sprite).Texture.GetSize() / (float32 tileSize);
@@ -454,36 +485,56 @@ type Settlement() as this =
         with get () = population
         and set (value) = population <- value
         
-
+    
+    /// <summary>
+    /// This function removes population from a settlement by obsoleting appropriate number of buildings
+    /// </summary>
+    /// <returns>returns Amount of population it was able to actually remove</returns>
+    member this.RemovePopulation(population:int): int=
+        let abandonedHousesNeeded = int (ceil(float32 population/float32 PopsPerHouse))
+        let buildings = getBuildings()
+        let abandonedHousesNeeded =
+            if (abandonedHousesNeeded> buildings.Count()) then
+                buildings.Count()
+            else
+                abandonedHousesNeeded
+        let buildings =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(buildings, buildings.Length))
+        let buildingsToAbandon = buildings.Take(abandonedHousesNeeded)
+        for building in buildingsToAbandon do
+            building.Abandon()
+        -population
     
     /// <summary>
     /// This function adds population to the settlement and accomodates it by adding buildings if needed
     /// </summary>
     /// <returns>returns Amount of population it was able to accomodate</returns>
     member this.AddPopulation(extraPopulation: int): int =
-        let newHousesNeeded:int = int (ceil(float32 (extraPopulation + population) / float32 PopsPerHouse) - ceil (float32(population) / float32(PopsPerHouse)))
-        
-        //returns the actual amount of population placed
-        let rec tryPlaceHouses(numberOfHouses:int, accHouses: int): int =
-            match numberOfHouses with
-                | houses when houses > 0 ->
-                    let result = tryPutBuildingOnMap(houseScene.Instance() :?> HouseFs)
-                    match result with
-                      | Some _ -> tryPlaceHouses(numberOfHouses - 1,accHouses + 1 )
-                      | None -> tryPlaceHouses(0,accHouses)
-                | _ -> accHouses
-        
-        let housesPlaced = tryPlaceHouses(newHousesNeeded,0)
-        
-        let populationAdded =
-            if (housesPlaced = newHousesNeeded) then
-                extraPopulation
-            else
-                housesPlaced * PopsPerHouse
-        
-        do this.Population <- this.Population + populationAdded        
-        
-        populationAdded
+        if (extraPopulation>0) then 
+            let newHousesNeeded:int = int (ceil(float32 (extraPopulation + population) / float32 PopsPerHouse) - ceil (float32(population) / float32(PopsPerHouse)))
+            
+            //returns the actual amount of population placed
+            let rec tryPlaceHouses(numberOfHouses:int, accHouses: int): int =
+                match numberOfHouses with
+                    | houses when houses > 0 ->
+                        let result = tryPutBuildingOnMap(houseScene.Instance() :?> HouseFs)
+                        match result with
+                          | Some _ -> tryPlaceHouses(numberOfHouses - 1,accHouses + 1 )
+                          | None -> tryPlaceHouses(0,accHouses)
+                    | _ -> accHouses
+            
+            let housesPlaced = tryPlaceHouses(newHousesNeeded,0)
+            
+            let populationAdded =
+                if (housesPlaced = newHousesNeeded) then
+                    extraPopulation
+                else
+                    housesPlaced * PopsPerHouse
+            
+            do this.Population <- this.Population + populationAdded        
+            
+            populationAdded
+        else
+            this.RemovePopulation(extraPopulation * -1)
         
     member this.GetRoads(): List<Road> = getRoads()
     
