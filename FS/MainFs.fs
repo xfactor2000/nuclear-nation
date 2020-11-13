@@ -49,15 +49,7 @@ type MainFs() as this =
         removePopulationButton.Value.Connect("pressed",this,"_onRemovePopulationButtonPressed") |> ignore
         let settlement = new Settlement()
         this.AddChild(settlement)
-        accumulatedPopulationDuringTurn<-50
-//        let house = houseScene.Instance() :?> HouseFs;
-//        this.AddChild(house);
-//        house.Position <- Vector2(float32 2 * desertTilemap.Value.CellSize.x,float32 15*desertTilemap.Value.CellSize.y)
-//        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 40, float32 16)))
-//        this.AddChild(new Road(Vector2(float32 20, float32 10), Vector2(float32 20, float32 30)))
-//        this.AddChild(new Road(Vector2(float32 30, float32 10), Vector2(float32 30, float32 30)))
-//        this.AddChild(new Road(Vector2(float32 0, float32 16), Vector2(float32 4, float32 16)))
-//        this.AddChild(new Road(Vector2(float32 4, float32 17), Vector2(float32 4, float32 20)))
+        accumulatedPopulationDuringTurn<-300
         turn <- updateTurn turn
 
     override this._Process(_) =

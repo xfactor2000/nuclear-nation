@@ -12,10 +12,7 @@ type BuildingFs() =
     inherit Node2D() 
     
     let mutable state = BuildingStateEnum.Active
-   
-    override this._Ready()=
-        this.AddUserSignal("turn_complete")
-    
+
     member internal this.State
         with get () = state
         and set (value) = state <- value
@@ -49,9 +46,25 @@ type HouseFs() as this =
         (this.GetNode(new NodePath("ActiveHouse")) :?> Sprite).Texture.GetSize() / (float32 tileSize);
 type MapTile = Vector2
 
-//TODO - need to add road ID based on parent ID, that will look like this "0/0/1/0"
-type Road(from:MapTile,``to``:MapTile,id: String) =
+type Road(from:MapTile,``to``:MapTile,id: String) as this =
     inherit Node()
+    
+    let _onTurnComplete() =
+        //TODO - eliminate duplication!!
+        let getRoads() =
+            Seq.toList(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Road).Cast<Road>())
+        //TODO - eliminate duplication!!
+        let getChildRoads(sourceRoad:Road) =
+            let roads = getRoads()
+            let childRoads = roads |> List.where(fun (road) -> road.id.ToString().StartsWith(sourceRoad.id + "/"))
+            childRoads
+        if this.GetChildren().Count = 0 && getChildRoads(this).Count() = 0 then
+            let tileMap = this.GetTree().Root.GetNode(new NodePath("Main/DesertTileMap")) :?> TileMap
+            for tile in this.GetTiles() do
+               //TODO - need to use global variables for things like desertTileMap, etc
+               do tileMap.SetCell(int tile.x, int tile.y, 0) 
+            GD.Print("Removing road " + this.id)
+            this.QueueFree()
     
     member val from:MapTile = from
     member val ``to``:MapTile = ``to``
@@ -59,6 +72,12 @@ type Road(from:MapTile,``to``:MapTile,id: String) =
     
     member this.IsVertical() =
         int from.x = int ``to``.x
+    
+
+        
+    override this._Ready() =
+        let mainNode = this.GetTree().Root.GetNode(new NodePath("Main"))
+        mainNode.Connect("turn_complete",this,"_onTurnComplete") |> ignore
     
     /// <summary>
     /// This function returns two lists of free tiles alongside the road
@@ -126,7 +145,11 @@ type Settlement() as this =
         Seq.toList(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Road).Cast<Road>())
         
     let getBuildings() =
-         Seq.toList(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? BuildingFs).Cast<BuildingFs>().ToList())
+         Seq.toList(seq {
+             for road in getRoads() do
+                 let childBuildings = road.GetChildren().Cast<Node>().Where(fun (n)-> n :? BuildingFs).Cast<BuildingFs>()
+                 yield childBuildings
+         } |> Seq.concat)
     
     let getCellsTakenByBuilding (building:BuildingFs, tileMap:TileMap) =
         let buildingSizeInTiles = building.GetSizeInTiles(int tileMap.CellSize.x)
@@ -323,7 +346,7 @@ type Settlement() as this =
                     | None -> None
             match buildingCoords with
                 | Some (_,coords) ->
-                    do this.AddChild(building)
+                    do road.AddChild(building)
                     do building.Position <- coords
                     Some(coords)
                 | None -> None        
