@@ -6,8 +6,9 @@ open System.Linq
 
 type BuildingStateEnum = Abandoned= 0 | Active = 1 
 
+
 [<AbstractClass>]
-type BuildingFs() as this =
+type BuildingFs() =
     inherit Node2D() 
     
     let mutable state = BuildingStateEnum.Active
@@ -40,7 +41,8 @@ type HouseFs() as this =
         activeSprite.Visible <- false
         abandonedSprite.Visible <- true
         abandonedCountDown <- 3
-        this.Connect("turn_complete",this,"_onTurnComplete") |> ignore
+        let mainNode = this.GetTree().Root.GetNode(new NodePath("Main"))
+        mainNode.Connect("turn_complete",this,"_onTurnComplete") |> ignore
       
     
     override this.GetSizeInTiles(tileSize:int) =
@@ -479,8 +481,7 @@ type Settlement() as this =
                         do this.AddChild(road)
                         Some(building)
                         
-   
-                        
+
     member this.Population
         with get () = population
         and set (value) = population <- value

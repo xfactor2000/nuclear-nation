@@ -3,6 +3,7 @@ using Godot;
 
 namespace nuclearnation.scenes.settlements
 {
-	public class House: Settlement.HouseFs
-	{}
+	public class House : Settlement.HouseFs
+	{
+	}
 }

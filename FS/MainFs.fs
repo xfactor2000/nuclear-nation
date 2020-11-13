@@ -28,7 +28,7 @@ type MainFs() as this =
     
     let _onAddPopulationButtonPressed() =
         accumulatedPopulationDuringTurn <- accumulatedPopulationDuringTurn + 10
-        
+
     let _onRemovePopulationButtonPressed() =
         accumulatedPopulationDuringTurn <- accumulatedPopulationDuringTurn - 10
     
@@ -47,7 +47,8 @@ type MainFs() as this =
         this.AddUserSignal("turn_complete")
         addPopulationButton.Value.Connect("pressed",this,"_onAddPopulationButtonPressed") |> ignore
         removePopulationButton.Value.Connect("pressed",this,"_onRemovePopulationButtonPressed") |> ignore
-        this.AddChild(new Settlement())
+        let settlement = new Settlement()
+        this.AddChild(settlement)
         accumulatedPopulationDuringTurn<-50
 //        let house = houseScene.Instance() :?> HouseFs;
 //        this.AddChild(house);
