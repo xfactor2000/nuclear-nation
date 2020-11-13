@@ -49,11 +49,13 @@ type HouseFs() as this =
         (this.GetNode(new NodePath("ActiveHouse")) :?> Sprite).Texture.GetSize() / (float32 tileSize);
 type MapTile = Vector2
 
-type Road(from:MapTile,``to``:MapTile) =
+//TODO - need to add road ID based on parent ID, that will look like this "0/0/1/0"
+type Road(from:MapTile,``to``:MapTile,id: String) =
     inherit Node()
     
     member val from:MapTile = from
     member val ``to``:MapTile = ``to``
+    member val id:String = id
     
     member this.IsVertical() =
         int from.x = int ``to``.x
@@ -378,7 +380,7 @@ type Settlement() as this =
                             (xFrom,yFrom + int minRoadLengthTiles)
                         else
                              (xFrom + int minRoadLengthTiles,yFrom)
-                    let road = new Road(MapTile(float32 xFrom,float32 yFrom),MapTile(float32 xTo,float32 yTo))
+                    let road = new Road(MapTile(float32 xFrom,float32 yFrom),MapTile(float32 xTo,float32 yTo),"0")
                     let newRoadsList = [road]
                     this.AddChild(road)
                     newRoadsList
@@ -423,7 +425,12 @@ type Settlement() as this =
                                 then
                                     None
                                 else
-                                    let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo))
+                                    let getChildRoads(sourceRoad:Road) =
+                                        let roads = getRoads()
+                                        let childRoads = roads |> List.where(fun (road) -> road.id.ToString().StartsWith(sourceRoad.id + "/"))
+                                        childRoads
+                                    let newRoadId = sourceRoad.id + "/" + getChildRoads(sourceRoad).Count().ToString()
+                                    let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo),newRoadId)
                                     let tiles = roadCandidate.GetTiles()
                                     let doNotBorderScreenEdgeCondition:bool =
                                         if roadCandidate.IsVertical() then
@@ -479,6 +486,7 @@ type Settlement() as this =
                     | None -> None
                     | Some road ->
                         do this.AddChild(road)
+                        GD.Print("Created road with ID " + road.id)
                         Some(building)
                         
 
