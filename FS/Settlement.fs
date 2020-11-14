@@ -543,8 +543,10 @@ type Settlement() as this =
             for road in roadsToFree do
                 let tileMap = road.GetTree().Root.GetNode(new NodePath("Main/DesertTileMap")) :?> TileMap
                 for tile in road.GetTiles() do
-                   //TODO - need to use global variables for things like desertTileMap, etc
-                   do tileMap.SetCell(int tile.x, int tile.y, 0) 
+                   //do not remove the "from" tile unless it's the first road
+                   if (road.id ="0") || (tile <> road.from) then
+                        //TODO - need to use global variables for things like desertTileMap, etc
+                        tileMap.SetCell(int tile.x, int tile.y, 0) 
                 road.QueueFree()
                 
             //TODO - remove debug code
