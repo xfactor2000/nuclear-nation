@@ -26,10 +26,23 @@ type HouseFs() as this =
     inherit BuildingFs()
     let mutable abandonedCountDown = 0
     
-    let _onTurnComplete() =
+    let _onBuildingTurnComplete() =
         abandonedCountDown<- abandonedCountDown - 1
         if abandonedCountDown <=0 then
             this.QueueFree()
+    
+    //TODO - remove this debug code!!
+    let _on_Area2D_input_event(viewport:Node, event:InputEvent, shapeIdx: int)=
+        match event with
+         | :? InputEventMouseButton as mouseButtonEvent->
+             if event.IsPressed() then
+                 let button = mouseButtonEvent.ButtonIndex
+                 if button = int ButtonList.Left then
+                     this.Abandon()
+         | _ -> ()    
+    
+    override this._Ready() =
+        this.GetNode(new NodePath("Area2D")).Connect("input_event",this,"_on_Area2D_input_event") |> ignore
     
     override this.Abandon() =
         base.State <- BuildingStateEnum.Abandoned
@@ -38,8 +51,9 @@ type HouseFs() as this =
         activeSprite.Visible <- false
         abandonedSprite.Visible <- true
         abandonedCountDown <- 3
+        //TODO - remove duplication
         let mainNode = this.GetTree().Root.GetNode(new NodePath("Main"))
-        mainNode.Connect("turn_complete",this,"_onTurnComplete") |> ignore
+        mainNode.Connect("turn_complete",this,"_onBuildingTurnComplete") |> ignore
       
     
     override this.GetSizeInTiles(tileSize:int) =
@@ -49,23 +63,6 @@ type MapTile = Vector2
 type Road(from:MapTile,``to``:MapTile,id: String) as this =
     inherit Node()
     
-    let _onTurnComplete() =
-        //TODO - eliminate duplication!!
-        let getRoads() =
-            Seq.toList(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Road).Cast<Road>())
-        //TODO - eliminate duplication!!
-        let getChildRoads(sourceRoad:Road) =
-            let roads = getRoads()
-            let childRoads = roads |> List.where(fun (road) -> road.id.ToString().StartsWith(sourceRoad.id + "/"))
-            childRoads
-        if this.GetChildren().Count = 0 && getChildRoads(this).Count() = 0 then
-            let tileMap = this.GetTree().Root.GetNode(new NodePath("Main/DesertTileMap")) :?> TileMap
-            for tile in this.GetTiles() do
-               //TODO - need to use global variables for things like desertTileMap, etc
-               do tileMap.SetCell(int tile.x, int tile.y, 0) 
-            GD.Print("Removing road " + this.id)
-            this.QueueFree()
-    
     member val from:MapTile = from
     member val ``to``:MapTile = ``to``
     member val id:String = id
@@ -73,11 +70,6 @@ type Road(from:MapTile,``to``:MapTile,id: String) as this =
     member this.IsVertical() =
         int from.x = int ``to``.x
     
-
-        
-    override this._Ready() =
-        let mainNode = this.GetTree().Root.GetNode(new NodePath("Main"))
-        mainNode.Connect("turn_complete",this,"_onTurnComplete") |> ignore
     
     /// <summary>
     /// This function returns two lists of free tiles alongside the road
@@ -134,6 +126,7 @@ type Settlement() as this =
     let AreaWidthCells = 50;
 
 
+    
     let houseScene = ResourceLoader.Load("res://scenes/settlements/House2D.tscn") :?> PackedScene
     
     let tileMap =
@@ -143,6 +136,11 @@ type Settlement() as this =
     
     let getRoads() =
         Seq.toList(this.GetChildren().Cast<Node>().Where(fun (n)-> n :? Road).Cast<Road>())
+    
+    let getChildRoads(sourceRoad:Road) =
+        let roads = getRoads()
+        let childRoads = roads |> List.where(fun (road) -> road.id.ToString().StartsWith(sourceRoad.id + "/"))
+        childRoads
         
     let getBuildings() =
          Seq.toList(seq {
@@ -172,7 +170,7 @@ type Settlement() as this =
             }
         Seq.toList(totalCellsTaken |> Seq.concat)
     
-    let getCellsTakenByRoads() =
+    let getCellsTakenByAllRoads() =
         Seq.toList(seq{
             for road in getRoads() do
                 for tile in road.GetTiles() do
@@ -187,7 +185,7 @@ type Settlement() as this =
     let tryPutBuildingOnMap(building:BuildingFs):Option<BuildingFs> =
         let freeTiles(road:Road) = road.GetFreeTilesAlong()
         let cellsTakenByBuildings = getCellsTakenByAllBuildings(tileMap.Value)
-        let cellsTakenByRoads = getCellsTakenByRoads()
+        let cellsTakenByRoads = getCellsTakenByAllRoads()
         
         let findPlacesToBuildAlongRoad (road:Road,building:BuildingFs,cellsTakenByBuildings:List<Vector2>,cellsAlongRoad:List<Vector2>):List<List<Vector2>> =
             let existsCheck(list1:List<Vector2>,list2:List<Vector2>):bool = not(list2.Except(list1).Any())
@@ -385,7 +383,7 @@ type Settlement() as this =
             let minRoadLengthTiles = 8.0f
             let roads = getRoads()
             let cellsTakenByBuildings = getCellsTakenByAllBuildings(tileMap.Value)
-            let cellsTakenByRoads = getCellsTakenByRoads()
+            let cellsTakenByRoads = getCellsTakenByAllRoads()
             //shuffling the roads array to pick a random one each time
             let roads =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(roads, roads.Length))
             let roads =
@@ -448,10 +446,6 @@ type Settlement() as this =
                                 then
                                     None
                                 else
-                                    let getChildRoads(sourceRoad:Road) =
-                                        let roads = getRoads()
-                                        let childRoads = roads |> List.where(fun (road) -> road.id.ToString().StartsWith(sourceRoad.id + "/"))
-                                        childRoads
                                     let newRoadId = sourceRoad.id + "/" + getChildRoads(sourceRoad).Count().ToString()
                                     let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo),newRoadId)
                                     let tiles = roadCandidate.GetTiles()
@@ -513,6 +507,36 @@ type Settlement() as this =
                         Some(building)
                         
 
+    let _onTurnComplete() =
+        let roads = getRoads()
+        if roads.Count() > 0 then
+            let initialRoad = getRoads() |> List.where(fun(road)->road.id = "0") |> List.head
+   
+            let rec checkAndScheduleRemoveRoads(currentRoad:Road) =
+                let childRoads = getChildRoads(currentRoad)
+                if childRoads.Count() >0 then
+                    for childRoad in childRoads do
+                        checkAndScheduleRemoveRoads(childRoad)
+                
+                let remainingChildRoads = getChildRoads(currentRoad) |> List.where(fun(r)->r.HasMeta("to_delete") = false)
+                if currentRoad.GetChildren().Count = 0 && remainingChildRoads.Count() = 0 && currentRoad.HasMeta("to_delete") = false then
+                    GD.Print("Removing road " + currentRoad.id)
+                    currentRoad.SetMeta("to_delete",true) 
+               
+            checkAndScheduleRemoveRoads(initialRoad)
+            
+            let roadsToFree = getRoads() |> List.where(fun(road)-> road.HasMeta("to_delete"))
+            for road in roadsToFree do
+                let tileMap = road.GetTree().Root.GetNode(new NodePath("Main/DesertTileMap")) :?> TileMap
+                for tile in road.GetTiles() do
+                   //TODO - need to use global variables for things like desertTileMap, etc
+                   do tileMap.SetCell(int tile.x, int tile.y, 0) 
+                road.QueueFree()
+            
+    override this._Ready() =
+        let mainNode = this.GetTree().Root.GetNode(new NodePath("Main"))
+        mainNode.Connect("turn_complete",this,"_onTurnComplete") |> ignore
+    
     member this.Population
         with get () = population
         and set (value) = population <- value
