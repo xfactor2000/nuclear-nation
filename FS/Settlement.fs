@@ -99,8 +99,22 @@ type Road(from:MapTile,``to``:MapTile,id: String) as this =
             let tmp_to_y = int (if ((int)``to``.y = (int)from.y) then int ``to``.y + 1 else int ``to``.y)
             if (this.IsVertical()) then tmp_to_y else tmp_to_y - 1
         
-        let xs = seq{for i in int from.x .. to_x do yield i}
-        let ys = seq{for i in int from.y .. to_y do yield i}
+        
+        //since from and to order is not guaranteed anymore, we sort the first and last points
+        let (finalFromX,finalToX) =
+            if int from.x < to_x then
+                (int from.x, to_x)
+            else
+                (to_x, int from.x)
+                
+        let (finalFromY,finalToY) =
+            if int from.y < to_y then
+                (int from.y,to_y)
+            else
+                (to_y,int from.y)
+        
+        let xs = seq{for i in int finalFromX .. finalToX do yield i}
+        let ys = seq{for i in int finalFromY .. finalToY do yield i}
         
         let tiles = seq {
             for x in xs do
@@ -431,23 +445,23 @@ type Settlement() as this =
                                         else
                                             (xFrom,yFrom + minRoadLengthTiles * float32 direction)
                                 
-                                let finalXFrom = if xFrom < xTo then xFrom else xTo
-                                let finalXTo = if xFrom < xTo then xTo else xFrom
-                                let finalYFrom = if yFrom < yTo then yFrom else yTo
-                                let finalYTo = if yFrom < yTo then yTo else yFrom
+//                                let finalXFrom = if xFrom < xTo then xFrom else xTo
+//                                let finalXTo = if xFrom < xTo then xTo else xFrom
+//                                let finalYFrom = if yFrom < yTo then yFrom else yTo
+//                                let finalYTo = if yFrom < yTo then yTo else yFrom
                                    
                                 //checking that map bounds are not violated
                                 if (
-                                       int finalXFrom<0 ||
-                                       int finalXTo>AreaWidthCells ||
-                                       int finalYFrom<0 ||
-                                       int finalYTo>AreaHeightCells 
+                                       (int xFrom<0 || int xTo <0) ||
+                                       (int xFrom>AreaWidthCells || int xTo>AreaWidthCells) ||
+                                       (int yFrom<0 || int yTo < 0) ||
+                                       (int yTo>AreaHeightCells || int yFrom>AreaHeightCells) 
                                     )
                                 then
                                     None
                                 else
                                     let newRoadId = sourceRoad.id + "/" + getChildRoads(sourceRoad).Count().ToString()
-                                    let roadCandidate = new Road(MapTile(finalXFrom,finalYFrom),MapTile(finalXTo,finalYTo),newRoadId)
+                                    let roadCandidate = new Road(MapTile(xFrom,yFrom),MapTile(xTo,yTo),newRoadId)
                                     let tiles = roadCandidate.GetTiles()
                                     let doNotBorderScreenEdgeCondition:bool =
                                         if roadCandidate.IsVertical() then
@@ -476,7 +490,7 @@ type Settlement() as this =
                  match roads with
                     | [] -> None
                     | road::tail ->
-                        let startTiles = [road.from;road.``to``]
+                        let startTiles = [road.``to``]
                         let shuffledStartTiles =  Seq.toList(MoreLinq.MoreEnumerable.RandomSubset(startTiles, startTiles.Length))
                         
                         let rec tryBuildRoadFromTiles(road:Road,tiles:List<MapTile>): Option<Road>=
@@ -532,6 +546,11 @@ type Settlement() as this =
                    //TODO - need to use global variables for things like desertTileMap, etc
                    do tileMap.SetCell(int tile.x, int tile.y, 0) 
                 road.QueueFree()
+                
+            //TODO - remove debug code
+            GD.Print("Roads left")
+            for road in getRoads() do
+                GD.Print(road.id + ":" + road.GetChildren().Count.ToString())
             
     override this._Ready() =
         let mainNode = this.GetTree().Root.GetNode(new NodePath("Main"))
