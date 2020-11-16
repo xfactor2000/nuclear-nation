@@ -25,6 +25,6 @@ object desktop extends ScalaModule {
   val gdxVersion="1.9.12"
   override def moduleDeps = Seq(core)
   def scalaVersion = "2.13.3"
-  override def forkArgs =  Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")
+//  override def forkArgs =  Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")
 
 }
