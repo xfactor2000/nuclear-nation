@@ -55,7 +55,7 @@ class NuclearNation extends Game {
     assetManager.load("expedition.png",classOf[Texture])
     assetManager.load("tradeCaravan.png",classOf[Texture])
     assetManager.load("militaryCaravan.png",classOf[Texture])
-    assetManager.load("desert_tile.png",classOf[Texture])
+    assetManager.load("desert_tile-32x32.png",classOf[Texture])
     assetManager.load("fog_of_war_tile.png",classOf[Texture])
     assetManager.load("town.png",classOf[Texture])
     assetManager.load("raider-facing-left.png",classOf[Texture])
