@@ -8,7 +8,7 @@ import com.anton.nuclearnation.NuclearNation;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.title = "Drop";
+		config.title = "Nuclear Nation";
 		config.width = 1600;
 		config.height = 960;
 		config.addIcon("desktop/resources/nn-128x128.png", Files.FileType.Internal);
