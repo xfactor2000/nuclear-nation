@@ -34,6 +34,7 @@ import com.badlogic.gdx.utils.Timer.Task
 import com.badlogic.gdx.utils.viewport.StretchViewport
 import com.badlogic.gdx.utils.{Align, Timer}
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 
 class MapScreen(game: NuclearNation) extends Screen{
@@ -89,8 +90,8 @@ class MapScreen(game: NuclearNation) extends Screen{
   val centerOnCapitalButton = new TextButton("Re-center",skin)
   val pauseButton = new TextButton("Pause",skin)
 
-  val hamletCell = mapData.getCell(10,10).get
-  hamletCell.location = Some(HamletQuarter(hamletCell))
+  val hamletCell: MapCellData = mapData.getCell(10,10).get
+  hamletCell.location = Some(HamletQuarter())
 
 //  var isPaused = false
 
@@ -134,7 +135,7 @@ class MapScreen(game: NuclearNation) extends Screen{
 //  }
 
 
-  val mapInputProcessor = new InputProcessor() {
+  val mapInputProcessor: InputProcessor = new InputProcessor() {
 
     override def touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
 
@@ -213,8 +214,8 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   val renderer = new OrthogonalTiledMapRenderer(map, mapScale)
 
-  val mapWidthPixels = (desertLayer.getWidth * desertLayer.getTileWidth * mapScale).asInstanceOf[Int]
-  val mapHeightPixels = (desertLayer.getHeight * desertLayer.getTileHeight * mapScale).asInstanceOf[Int]
+  val mapWidthPixels: Int = (desertLayer.getWidth * desertLayer.getTileWidth * mapScale).asInstanceOf[Int]
+  val mapHeightPixels: Int = (desertLayer.getHeight * desertLayer.getTileHeight * mapScale).asInstanceOf[Int]
 
   var cameraCenterX = 0f
   var cameraCenterY = 0f
@@ -419,6 +420,44 @@ class MapScreen(game: NuclearNation) extends Screen{
     turnLabel.setText(s"Turn: $turn")
     turnLabel.setWidth(turnLabel.getPrefWidth)
 
+    //adding new house each turn
+    def findNeighboringEmptyCell(sourceCell:MapCellData):Option[MapCellData] = {
+      val surroundingCells = List(
+        mapData.getCell(sourceCell.x-1,sourceCell.y),
+        mapData.getCell(sourceCell.x+1,sourceCell.y),
+        mapData.getCell(sourceCell.x,sourceCell.y-1),
+        mapData.getCell(sourceCell.x,sourceCell.y+1)
+      )
+        .filter(c=>c.isDefined)
+        .map(c=>c.get)
+        .filter(c=> c.x >0 && c.y > 0 && c.x< mapWidthTiles && c.y < mapHeightTiles)
+      val random = new Random()
+      val emptyCells = surroundingCells.filter(c=>c.location.isEmpty)
+      if (emptyCells.isEmpty ) {
+        random.shuffle(surroundingCells).foreach(c=>{
+          val result = findNeighboringEmptyCell(c)
+          result match {
+            case Some(c) => return Some(c)
+            case None =>
+          }
+        })
+        None
+      } else {
+        val randomCell = emptyCells(random.nextInt(emptyCells.length))
+        Some(randomCell)
+      }
+
+
+    }
+    val cell = findNeighboringEmptyCell(hamletCell)
+    cell.get.location = Some(TownQuarter())
+    val townRegion = new TextureRegion(settlementQuarterImage)
+    val townTile = new StaticTiledMapTile(townRegion)
+    val townCell = new Cell
+    townCell.setTile(townTile)
+    townLayer.setCell(cell.get.x,cell.get.y,townCell)
+
+
   }
 
 }
@@ -430,11 +469,10 @@ object MapScreen{
 
 
   sealed abstract class MapLocation(){
-    def mapCell:MapCellData
 //    def name:String
   }
-  case class TownQuarter(mapCell: MapCellData) extends MapLocation
-  case class HamletQuarter(mapCell: MapCellData) extends MapLocation
+  case class TownQuarter() extends MapLocation
+  case class HamletQuarter() extends MapLocation
 //  case class RaiderCampInfo( name:String,mapCell: MapCellData) extends MapLocation()
 //  case class CityInfo(name:String,mapCell: MapCellData, population: Int, var isOwnedByPlayer:Boolean = false) extends MapLocation()
 //  case class RuinsInfo(mapCell: MapCellData,name:String = "Pre-war ruins") extends MapLocation()
