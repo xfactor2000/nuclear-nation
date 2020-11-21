@@ -41,6 +41,7 @@ class MapScreen(game: NuclearNation) extends Screen{
 //  val technologies:List[Technology] = List(Technology("Advanced tactics"),Technology("Automatic weapons"))
 //
   val assetManager = game.assetManager
+  var turn = 0
 //
   val map = new TiledMap
   val layers = map.getLayers
@@ -48,10 +49,10 @@ class MapScreen(game: NuclearNation) extends Screen{
   val mapWidthTiles = 60
   val mapHeightTiles = 60
 
-  val desertTileTexture = assetManager.get("desert_tile-32x32.png",classOf[Texture])
+  val desertTileTexture = assetManager.get("desert_tile-64x64.png",classOf[Texture])
 //  val ruinedBuildingTexture = assetManager.get("ruined-building.png",classOf[Texture])
   val desertLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
-//  val townLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
+  val townLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
 //  val fogOfWarLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
   val desertTileCell:Cell = new Cell
 //  val fogOfWarCell = new Cell
@@ -68,13 +69,14 @@ class MapScreen(game: NuclearNation) extends Screen{
 //
 //  val fogOfWarTexture = assetManager.get("fog_of_war_tile.png",classOf[Texture])
 //  val townImage = assetManager.get("town.png",classOf[Texture])
+    val settlementQuarterImage: Texture = assetManager.get("settlements/house_active-64x64.png",classOf[Texture])
 //
   desertTileCell.setTile(new StaticTiledMapTile(region))
 //  fogOfWarCell.setTile(new StaticTiledMapTile(new TextureRegion(fogOfWarTexture)))
 //
 //  val coordsGenerator = new MapCoordsGenerator(mapWidthTiles,mapHeightTiles,3)
 //
-//  val mapData = new MapData(mapWidthTiles,mapHeightTiles)
+  val mapData = new MapData(mapWidthTiles,mapHeightTiles)
 //
 //
 //  val gameFont = assetManager.get("fonts/lunchtime-doubly-so/lunchds.ttf",classOf[BitmapFont])
@@ -87,6 +89,9 @@ class MapScreen(game: NuclearNation) extends Screen{
   val centerOnCapitalButton = new TextButton("Re-center",skin)
   val pauseButton = new TextButton("Pause",skin)
 
+  val hamletCell = mapData.getCell(10,10).get
+  hamletCell.location = Some(HamletQuarter(hamletCell))
+
 //  var isPaused = false
 
 //  val music = Gdx.audio.newMusic(Gdx.files.internal("music/POL-dark-crossing-short.mp3"))
@@ -94,7 +99,7 @@ class MapScreen(game: NuclearNation) extends Screen{
 //  val roads = ListBuffer[(MapCellData,MapCellData)]()
 
 //  var scrap = 0
-//  val scrapLabelButton = new TextButton("Scrap: ",skin)
+  val turnLabel = new TextButton(s"Turn: $turn",skin) //using Button because it looks better with this skin
 //  scrapLabelButton.setDisabled(true)
 //
   val mapScale = 1.0f;
@@ -122,57 +127,48 @@ class MapScreen(game: NuclearNation) extends Screen{
 //  buttonsGroup.addActor(pauseButton)
 //  stage.addActor(tileGroup)
 //  stage.addActor(buttonsGroup)
+    stage.addActor(turnLabel)
 //
 //  def pauseGame(): Unit ={
 //    isPaused = !isPaused
 //  }
 
 
-//  val mapInputProcessor = new InputProcessor() {
-//
-//    override def touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {
-//      if (button == Input.Buttons.RIGHT) {
-//        mapRightClicked(screenX,screenY)
-//        true
-//      } else if (button == Input.Buttons.LEFT) {
-////          mapLeftClicked(screenX, screenY)
-//          true
-//      } else {
-//        false
-//      }
-//    }
-//
-//    override def keyDown(keycode: Int): Boolean = {true}
-//
-//    override def keyUp(keycode: Int): Boolean = {
-//      keycode match {
+  val mapInputProcessor = new InputProcessor() {
+
+    override def touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
+
+    override def keyDown(keycode: Int): Boolean = {true}
+
+    override def keyUp(keycode: Int): Boolean = {
+      keycode match {
 //        case Input.Keys.C=>
 //          true
 //        case Input.Keys.SPACE=>
 //          centerScreen()
 //          true
-//        case Input.Keys.P=>
-//          pauseGame()
-//          true
-//        case _=> false
-//      }
-//    }
-//
-//
-//    override def keyTyped(character: Char): Boolean = {true}
-//
-//    override def touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
-//
-//    override def touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean = {true}
-//
-//    override def mouseMoved(screenX: Int, screenY: Int): Boolean = {true}
-//
-//    override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
-//  }
+        case Input.Keys.ENTER=>
+          updateTurn()
+          true
+        case _=> false
+      }
+    }
+
+
+    override def keyTyped(character: Char): Boolean = {true}
+
+    override def touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
+
+    override def touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean = {true}
+
+    override def mouseMoved(screenX: Int, screenY: Int): Boolean = {true}
+
+    override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
+  }
 
 //  val locations = ListBuffer[MapLocation]()
 
-  val cityNames = List[String]("New Reno","Modoc","Arroyo","Den","Heaven","Nuke","Tumbleweed")
+//  val cityNames = List[String]("New Reno","Modoc","Arroyo","Den","Heaven","Nuke","Tumbleweed")
 
 //  val capitalCoords = coordsGenerator.getCoords
 //
@@ -197,22 +193,22 @@ class MapScreen(game: NuclearNation) extends Screen{
   ) yield  {
     desertLayer.setCell(x, y, desertTileCell)
 
-//    val location = mapData.getCell(x,y).get.location
-//
-//    location match {
-//      case Some(_:CityInfo) => {
-//        val townRegion = new TextureRegion(townImage)
-//        val townTile = new StaticTiledMapTile(townRegion)
-//        val townCell = new Cell
-//        townCell.setTile(townTile)
-//        townLayer.setCell(x,y,townCell)
-//      }
-//
-//      case _=>
-//
-//    }
+    val location = mapData.getCell(x,y).get.location
+
+    location match {
+      case Some(_:TownQuarter | _:HamletQuarter) => {
+        val townRegion = new TextureRegion(settlementQuarterImage)
+        val townTile = new StaticTiledMapTile(townRegion)
+        val townCell = new Cell
+        townCell.setTile(townTile)
+        townLayer.setCell(x,y,townCell)
+      }
+
+      case _=>
+
+    }
   }
-//  map.getLayers.add(townLayer)
+  map.getLayers.add(townLayer)
   map.getLayers.add(desertLayer)
 
   val renderer = new OrthogonalTiledMapRenderer(map, mapScale)
@@ -241,10 +237,10 @@ class MapScreen(game: NuclearNation) extends Screen{
 //    Gdx.gl.glLineWidth(1)
 //  }
 
-//  def centerScreen(): Unit ={
-//    cameraCenterX = capitalCell.x * desertLayer.getTileWidth * mapScale - desertLayer.getTileWidth/2  * mapScale
-//    cameraCenterY = capitalCell.y * desertLayer.getTileHeight * mapScale - desertLayer.getTileHeight /2 * mapScale
-//  }
+  def centerScreen(): Unit ={
+    cameraCenterX = camera.viewportWidth*mapScale/2
+    cameraCenterY = camera.viewportHeight*mapScale/2
+  }
 
 
 
@@ -259,12 +255,12 @@ class MapScreen(game: NuclearNation) extends Screen{
 //      music.play()
 //    }
 //
-//    val multiplexer = new InputMultiplexer()
-//    multiplexer.addProcessor(stage)
-//    multiplexer.addProcessor(mapInputProcessor)
-//    Gdx.input.setInputProcessor(multiplexer)
+    val multiplexer = new InputMultiplexer()
+    multiplexer.addProcessor(stage)
+    multiplexer.addProcessor(mapInputProcessor)
+    Gdx.input.setInputProcessor(multiplexer)
 //
-//    centerScreen()
+    centerScreen()
 
   }
 
@@ -276,21 +272,21 @@ class MapScreen(game: NuclearNation) extends Screen{
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     stage.getBatch.setColor(Color.WHITE)
 
-//    if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
-//      cameraCenterY += 25
-//    }
-//
-//    if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
-//      cameraCenterY -= 25
-//    }
-//
-//    if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)){
-//      cameraCenterX-=25
-//    }
-//
-//    if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)){
-//      cameraCenterX += 25
-//    }
+    if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
+      cameraCenterY += 25
+    }
+
+    if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
+      cameraCenterY -= 25
+    }
+
+    if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)){
+      cameraCenterX-=25
+    }
+
+    if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)){
+      cameraCenterX += 25
+    }
 //
 //
     setCameraPosition(camera,d)
@@ -334,7 +330,7 @@ class MapScreen(game: NuclearNation) extends Screen{
 //
     renderer.getBatch.begin()
     renderer.renderTileLayer(desertLayer)
-//    renderer.renderTileLayer(townLayer)
+    renderer.renderTileLayer(townLayer)
 //
 //
 //    if (!game.DISABLE_FOG_OF_WAR){
@@ -361,8 +357,8 @@ class MapScreen(game: NuclearNation) extends Screen{
 //    val centerOnCapitalButtonCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - centerOnCapitalButton.getPrefWidth,stage.getViewport.getScreenHeight.toFloat,0))
 //    centerOnCapitalButton.setPosition(centerOnCapitalButtonCoords.x,centerOnCapitalButtonCoords.y)
 //    pauseButton.setPosition(centerOnCapitalButton.getX - pauseButton.getPrefWidth - 5,centerOnCapitalButton.getY)
-//    val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - scrapLabelButton.getPrefWidth,scrapLabelButton.getPrefHeight,0))
-//    scrapLabelButton.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
+    val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - turnLabel.getPrefWidth,turnLabel.getPrefHeight,0))
+    turnLabel.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
   }
 
   override def resize(width: Int, height: Int): Unit = {}
@@ -418,6 +414,13 @@ class MapScreen(game: NuclearNation) extends Screen{
 //    }
 //  }
 
+  def updateTurn(): Unit ={
+    turn +=1
+    turnLabel.setText(s"Turn: $turn")
+    turnLabel.setWidth(turnLabel.getPrefWidth)
+
+  }
+
 }
 
 object MapScreen{
@@ -428,13 +431,15 @@ object MapScreen{
 
   sealed abstract class MapLocation(){
     def mapCell:MapCellData
-    def name:String
+//    def name:String
   }
-  case class RaiderCampInfo( name:String,mapCell: MapCellData) extends MapLocation()
-  case class CityInfo(name:String,mapCell: MapCellData, population: Int, var isOwnedByPlayer:Boolean = false) extends MapLocation()
-  case class RuinsInfo(mapCell: MapCellData,name:String = "Pre-war ruins") extends MapLocation()
-  case class CoveredAreaInfo(mapCell: MapCellData,name:String="") extends MapLocation
-
-  case class Technology(name:String, var enabled:Boolean = false)
+  case class TownQuarter(mapCell: MapCellData) extends MapLocation
+  case class HamletQuarter(mapCell: MapCellData) extends MapLocation
+//  case class RaiderCampInfo( name:String,mapCell: MapCellData) extends MapLocation()
+//  case class CityInfo(name:String,mapCell: MapCellData, population: Int, var isOwnedByPlayer:Boolean = false) extends MapLocation()
+//  case class RuinsInfo(mapCell: MapCellData,name:String = "Pre-war ruins") extends MapLocation()
+//  case class CoveredAreaInfo(mapCell: MapCellData,name:String="") extends MapLocation
+//
+//  case class Technology(name:String, var enabled:Boolean = false)
 
 }
