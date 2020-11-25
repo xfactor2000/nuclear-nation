@@ -70,7 +70,8 @@ class MapScreen(game: NuclearNation) extends Screen{
 //
 //  val fogOfWarTexture = assetManager.get("fog_of_war_tile.png",classOf[Texture])
 //  val townImage = assetManager.get("town.png",classOf[Texture])
-    val settlementQuarterImage: Texture = assetManager.get("settlements/house_active-64x64.png",classOf[Texture])
+  val hamletImage: Texture = assetManager.get("settlements/house_active-64x64.png",classOf[Texture])
+  val townQuarterImage: Texture = assetManager.get("settlements/house_active-32x32.png",classOf[Texture])
 //
   desertTileCell.setTile(new StaticTiledMapTile(region))
 //  fogOfWarCell.setTile(new StaticTiledMapTile(new TextureRegion(fogOfWarTexture)))
@@ -198,7 +199,7 @@ class MapScreen(game: NuclearNation) extends Screen{
 
     location match {
       case Some(_:TownQuarter | _:HamletQuarter) => {
-        val townRegion = new TextureRegion(settlementQuarterImage)
+        val townRegion = new TextureRegion(hamletImage)
         val townTile = new StaticTiledMapTile(townRegion)
         val townCell = new Cell
         townCell.setTile(townTile)
@@ -451,7 +452,7 @@ class MapScreen(game: NuclearNation) extends Screen{
     }
     val cell = findNeighboringEmptyCell(hamletCell)
     cell.get.location = Some(TownQuarter())
-    val townRegion = new TextureRegion(settlementQuarterImage)
+    val townRegion = new TextureRegion(hamletImage)
     val townTile = new StaticTiledMapTile(townRegion)
     val townCell = new Cell
     townCell.setTile(townTile)
