@@ -130,24 +130,44 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   override def render( d: Float): Unit = {
 
-    Gdx.gl.glClearColor(0, 0, 0, 1)
-    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
-    stage.getBatch.setColor(Color.WHITE)
+    cameraCenterY = {
+      val newCameraCenterY = {
+        if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
+          cameraCenterY + 25
+        } else if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
+          cameraCenterY - 25
+        } else
+          cameraCenterY
+      }
 
-    if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
-      cameraCenterY += 25
+      if (newCameraCenterY + camera.viewportHeight /2 > mapHeightPixels){
+        mapHeightPixels - camera.viewportHeight /2
+      } else if (newCameraCenterY - camera.viewportHeight /2 < 0) {
+        camera.viewportHeight /2
+      }
+      else {
+        newCameraCenterY
+      }
     }
 
-    if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
-      cameraCenterY -= 25
-    }
+    cameraCenterX = {
+      val newCameraCenterX = {
+        if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)) {
+          cameraCenterX-25
+        } else if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)) {
+          cameraCenterX + 25
+        } else
+          cameraCenterX
+      }
 
-    if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)){
-      cameraCenterX-=25
-    }
-
-    if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)){
-      cameraCenterX += 25
+      if (newCameraCenterX + camera.viewportWidth /2 > mapWidthPixels){
+        mapWidthPixels - camera.viewportWidth /2
+      } else if (newCameraCenterX - camera.viewportWidth /2 < 0) {
+        camera.viewportWidth/2
+      }
+      else {
+        newCameraCenterX
+      }
     }
 
     setCameraPosition(camera,d)
@@ -161,23 +181,6 @@ class MapScreen(game: NuclearNation) extends Screen{
 
 
   private def setCameraPosition(camera: OrthographicCamera, delta: Float): Unit ={
-
-
-    if (cameraCenterY + camera.viewportHeight /2 > mapHeightPixels) {
-      cameraCenterY = mapHeightPixels - camera.viewportHeight /2
-    }
-
-    if (cameraCenterY - camera.viewportHeight /2 < 0) {
-      cameraCenterY = camera.viewportHeight /2
-    }
-
-    if (cameraCenterX - camera.viewportWidth/2<0){
-      cameraCenterX = camera.viewportWidth/2
-    }
-
-    if (cameraCenterX + camera.viewportWidth /2 > mapWidthPixels) {
-      cameraCenterX = mapWidthPixels - camera.viewportWidth /2
-    }
 
     camera.position.set(cameraCenterX,cameraCenterY,0)
     camera.update()
