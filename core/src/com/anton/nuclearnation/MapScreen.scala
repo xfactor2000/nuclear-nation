@@ -1,22 +1,18 @@
 package com.anton.nuclearnation
 
-import java.lang.Math
-
+import com.anton.nuclearnation.Extensions._
 import com.anton.nuclearnation.MapScreen._
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx._
 import com.badlogic.gdx.graphics._
 import com.badlogic.gdx.graphics.g2d.TextureRegion
-import com.badlogic.gdx.maps.tiled.TiledMap
-import com.badlogic.gdx.maps.tiled.TiledMapTileLayer
+import com.badlogic.gdx.maps.tiled.{TiledMap, TiledMapTileLayer}
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer
 import com.badlogic.gdx.maps.tiled.tiles.StaticTiledMapTile
 import com.badlogic.gdx.math.Vector3
-
-import scala.util.Random
-import com.badlogic.gdx.maps.tiled.renderers.{IsometricStaggeredTiledMapRenderer, IsometricTiledMapRenderer, OrthogonalTiledMapRenderer}
-import com.badlogic.gdx.scenes.scene2d.{Group, InputEvent, InputListener, Stage}
-import com.badlogic.gdx.scenes.scene2d.ui.{Button, Dialog, Image, Label, ScrollPane, Skin, Table, TextButton, TextTooltip, Tooltip, TooltipManager, Value}
+import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.{Skin, TextButton}
 import com.badlogic.gdx.utils.viewport.StretchViewport
 
 
@@ -174,13 +170,11 @@ class MapScreen(game: NuclearNation) extends Screen{
     camera.update()
     renderer.setView(camera)
 
-    renderer.getBatch.begin()
-    renderer.renderTileLayer(desertLayer)
-
-    //drawing the quarters
-    renderer.getBatch.draw(townQuarterImage,0 * mapTileSize * mapScale,0 * mapTileSize * mapScale)
-
-    renderer.getBatch.end()
+    renderer.getBatch.drawBatch(batch=>{
+      renderer.renderTileLayer(desertLayer)
+      //drawing the quarters
+      batch.draw(townQuarterImage,0 * mapTileSize * mapScale,0 * mapTileSize * mapScale)
+    })
 
     val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - turnLabel.getPrefWidth,turnLabel.getPrefHeight,0))
     turnLabel.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
