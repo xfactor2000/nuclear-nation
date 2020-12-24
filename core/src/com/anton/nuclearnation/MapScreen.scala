@@ -128,7 +128,7 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   }
 
-  override def render( d: Float): Unit = {
+  override def render(delta: Float): Unit = {
 
     cameraCenterY = {
       val newCameraCenterY = {
@@ -170,35 +170,29 @@ class MapScreen(game: NuclearNation) extends Screen{
       }
     }
 
-    setCameraPosition(camera,d)
-    stage.act(d)
-    stage.draw()
-
-
-  }
-
-  case class ActorMapCoords(tileX:Int,tileY:Int)
-
-
-  private def setCameraPosition(camera: OrthographicCamera, delta: Float): Unit ={
-
     camera.position.set(cameraCenterX,cameraCenterY,0)
     camera.update()
     renderer.setView(camera)
 
     renderer.getBatch.begin()
     renderer.renderTileLayer(desertLayer)
-//    renderer.renderTileLayer(townLayer)
 
     //drawing the quarters
     renderer.getBatch.draw(townQuarterImage,0 * mapTileSize * mapScale,0 * mapTileSize * mapScale)
 
     renderer.getBatch.end()
 
-
     val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - turnLabel.getPrefWidth,turnLabel.getPrefHeight,0))
     turnLabel.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
-  }
+
+    stage.act(delta)
+    stage.draw()
+
+}
+
+  case class ActorMapCoords(tileX:Int,tileY:Int)
+
+
 
   override def resize(width: Int, height: Int): Unit = {}
 
