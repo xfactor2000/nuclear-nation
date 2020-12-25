@@ -126,44 +126,30 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   override def render(delta: Float): Unit = {
 
-    cameraCenterY = {
-      val newCameraCenterY = {
-        if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
-          cameraCenterY + 25
-        } else if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
-          cameraCenterY - 25
-        } else
-          cameraCenterY
-      }
+    val moveXDirection =
+      if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)){
+        1
+      } else if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)){
+        -1
+      } else
+        0
 
-      if (newCameraCenterY + camera.viewportHeight /2 > mapHeightPixels){
-        mapHeightPixels - camera.viewportHeight /2
-      } else if (newCameraCenterY - camera.viewportHeight /2 < 0) {
-        camera.viewportHeight /2
-      }
-      else {
-        newCameraCenterY
-      }
+    val moveYDirection =
+      if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
+        1
+      } else if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
+        -1
+      } else
+        0
+
+    cameraCenterY = {
+      val newCameraCenterY = cameraCenterY + 25 * moveYDirection
+      newCameraCenterY.min(mapHeightPixels - camera.viewportHeight /2).max(camera.viewportHeight /2)
     }
 
     cameraCenterX = {
-      val newCameraCenterX = {
-        if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)) {
-          cameraCenterX-25
-        } else if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)) {
-          cameraCenterX + 25
-        } else
-          cameraCenterX
-      }
-
-      if (newCameraCenterX + camera.viewportWidth /2 > mapWidthPixels){
-        mapWidthPixels - camera.viewportWidth /2
-      } else if (newCameraCenterX - camera.viewportWidth /2 < 0) {
-        camera.viewportWidth/2
-      }
-      else {
-        newCameraCenterX
-      }
+      val newCameraCenterX = cameraCenterX + 25 * moveXDirection
+      newCameraCenterX.min(mapWidthPixels - camera.viewportWidth /2).max(camera.viewportWidth /2)
     }
 
     camera.position.set(cameraCenterX,cameraCenterY,0)
