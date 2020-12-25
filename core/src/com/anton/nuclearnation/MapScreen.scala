@@ -124,23 +124,22 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   }
 
+  def getMapMovementVector(keys:List[Int], directionToReturn:Int):Int={
+    keys.foreach(key=>{
+      if (Gdx.input.isKeyPressed(key)) return directionToReturn
+    })
+    0
+  }
+
   override def render(delta: Float): Unit = {
 
     val moveXDirection =
-      if (Gdx.input.isKeyPressed(Keys.RIGHT) || Gdx.input.isKeyPressed(Keys.D)){
-        1
-      } else if (Gdx.input.isKeyPressed(Keys.LEFT) || Gdx.input.isKeyPressed(Keys.A)){
-        -1
-      } else
-        0
+      getMapMovementVector(List(Keys.RIGHT,Keys.D),1) +
+        getMapMovementVector(List(Keys.LEFT,Keys.A),-1)
 
     val moveYDirection =
-      if (Gdx.input.isKeyPressed(Keys.UP) || Gdx.input.isKeyPressed(Keys.W)){
-        1
-      } else if (Gdx.input.isKeyPressed(Keys.DOWN) || Gdx.input.isKeyPressed(Keys.S)){
-        -1
-      } else
-        0
+      getMapMovementVector(List(Keys.UP,Keys.W),1) +
+        getMapMovementVector(List(Keys.DOWN,Keys.S),-1)
 
     cameraCenterY = {
       val newCameraCenterY = cameraCenterY + 25 * moveYDirection
