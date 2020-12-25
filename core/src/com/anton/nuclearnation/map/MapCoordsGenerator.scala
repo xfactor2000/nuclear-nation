@@ -1,4 +1,4 @@
-package com.anton.nuclearnation
+package com.anton.nuclearnation.map
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
