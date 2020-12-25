@@ -2,6 +2,7 @@ package com.anton.nuclearnation
 
 import com.anton.nuclearnation.Extensions._
 import com.anton.nuclearnation.MapScreen._
+import com.anton.nuclearnation.map.{MapData, MapTile}
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx._
 import com.badlogic.gdx.graphics._
@@ -41,7 +42,6 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   val mapData = new MapData(mapWidthTiles,mapHeightTiles)
 
-
   val skin: Skin = assetManager.get("data/commodore64/skin/uiskin.json",classOf[Skin])
 
   val stage = new Stage(new StretchViewport(1600,960,new OrthographicCamera()))
@@ -50,15 +50,9 @@ class MapScreen(game: NuclearNation) extends Screen{
   val centerOnCapitalButton = new TextButton("Re-center",skin)
   val pauseButton = new TextButton("Pause",skin)
 
-  val hamletCell: MapCellData = mapData.getCell(10,10).get
-  hamletCell.location = Some(HamletQuarter())
-
-
   val turnLabel = new TextButton(s"Turn: $turn",skin) //using Button because it looks better with this skin
-  val mapScale = 1.0f
 
-    stage.addActor(turnLabel)
-
+  stage.addActor(turnLabel)
 
 
   val mapInputProcessor: InputProcessor = new InputProcessor() {
@@ -99,17 +93,17 @@ class MapScreen(game: NuclearNation) extends Screen{
   }
   map.getLayers.add(desertLayer)
 
-  val renderer = new OrthogonalTiledMapRenderer(map, mapScale)
+  val renderer = new OrthogonalTiledMapRenderer(map, 1.0f)
 
-  val mapWidthPixels: Int = (desertLayer.getWidth * desertLayer.getTileWidth * mapScale).asInstanceOf[Int]
-  val mapHeightPixels: Int = (desertLayer.getHeight * desertLayer.getTileHeight * mapScale).asInstanceOf[Int]
+  val mapWidthPixels: Int = (desertLayer.getWidth * desertLayer.getTileWidth )
+  val mapHeightPixels: Int = (desertLayer.getHeight * desertLayer.getTileHeight)
 
   var cameraCenterX = 0f
   var cameraCenterY = 0f
 
   def centerScreen(): Unit ={
-    cameraCenterX = camera.viewportWidth*mapScale/2
-    cameraCenterY = camera.viewportHeight*mapScale/2
+    cameraCenterX = camera.viewportWidth/2
+    cameraCenterY = camera.viewportHeight/2
   }
 
 
@@ -124,22 +118,22 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   }
 
-  def getMapMovementVector(keys:List[Int], directionToReturn:Int):Int={
+  def getMapMovementVector(keys:List[Int], directionToReturn:Int):Option[Int]={
     keys.foreach(key=>{
-      if (Gdx.input.isKeyPressed(key)) return directionToReturn
+      if (Gdx.input.isKeyPressed(key)) return Some(directionToReturn)
     })
-    0
+    None
   }
 
   override def render(delta: Float): Unit = {
 
     val moveXDirection =
-      getMapMovementVector(List(Keys.RIGHT,Keys.D),1) +
-        getMapMovementVector(List(Keys.LEFT,Keys.A),-1)
+      getMapMovementVector(List(Keys.RIGHT,Keys.D),1).getOrElse(0) +
+        getMapMovementVector(List(Keys.LEFT,Keys.A),-1).getOrElse(0)
 
     val moveYDirection =
-      getMapMovementVector(List(Keys.UP,Keys.W),1) +
-        getMapMovementVector(List(Keys.DOWN,Keys.S),-1)
+      getMapMovementVector(List(Keys.UP,Keys.W),1).getOrElse(0) +
+        getMapMovementVector(List(Keys.DOWN,Keys.S),-1).getOrElse(0)
 
     cameraCenterY = {
       val newCameraCenterY = cameraCenterY + 25 * moveYDirection
@@ -158,7 +152,7 @@ class MapScreen(game: NuclearNation) extends Screen{
     renderer.getBatch.drawBatch(batch=>{
       renderer.renderTileLayer(desertLayer)
       //drawing the quarters
-      batch.draw(townQuarterImage,0 * mapTileSize * mapScale,0 * mapTileSize * mapScale)
+      batch.draw(hamletImage,10 * mapTileSize,10 * mapTileSize)
     })
 
     val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - turnLabel.getPrefWidth,turnLabel.getPrefHeight,0))
