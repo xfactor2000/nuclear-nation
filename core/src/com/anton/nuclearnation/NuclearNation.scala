@@ -1,19 +1,13 @@
 package com.anton.nuclearnation
 
-import java.io.File
-
-import com.anton.nuclearnation.MapScreen.MapLocation
-import com.badlogic.gdx.{ApplicationAdapter, Game, Gdx, Screen}
+import com.badlogic.gdx.Game
 import com.badlogic.gdx.assets.AssetManager
-import com.badlogic.gdx.assets.loaders.resolvers.{ExternalFileHandleResolver, InternalFileHandleResolver}
-import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver
 import com.badlogic.gdx.graphics.Texture
-import com.badlogic.gdx.graphics.g2d.freetype.{FreeTypeFontGenerator, FreeTypeFontGeneratorLoader, FreetypeFontLoader}
 import com.badlogic.gdx.graphics.g2d.freetype.FreetypeFontLoader.FreeTypeFontLoaderParameter
+import com.badlogic.gdx.graphics.g2d.freetype.{FreeTypeFontGenerator, FreeTypeFontGeneratorLoader, FreetypeFontLoader}
 import com.badlogic.gdx.graphics.g2d.{BitmapFont, SpriteBatch}
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
-
-import scala.collection.mutable.ListBuffer
 
 
 class NuclearNation extends Game {
@@ -27,22 +21,10 @@ class NuclearNation extends Game {
   assetManager.setLoader(classOf[BitmapFont], ".ttf", new FreetypeFontLoader(resolver))
 
 
-
-  val DISABLE_FOG_OF_WAR = if (sys.env.get("DISABLE_FOG_OF_WAR").isEmpty) false else sys.env("DISABLE_FOG_OF_WAR").toLowerCase().toBoolean
-
   lazy val skin = assetManager.get("data/commodore64/skin/uiskin.json",classOf[Skin])
   val gameFontParam = new FreeTypeFontLoaderParameter()
 
   lazy val mapScreen = new MapScreen(this)
-
-  val NO_MUSIC = if (sys.env.get("NO_MUSIC").isEmpty) true else sys.env("NO_MUSIC").toLowerCase().toBoolean
-
-  //unit counts
-  val initialUnitCount = if (sys.env.get("INITIAL_UNIT_COUNT").isEmpty) 0 else sys.env("INITIAL_UNIT_COUNT").toInt
-  var soldierCounter:Int = initialUnitCount
-  var scientistCounter:Int = initialUnitCount
-  var engineerCounter:Int = initialUnitCount
-
 
   override def create(): Unit = {
     batch = new SpriteBatch
