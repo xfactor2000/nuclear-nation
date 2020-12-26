@@ -10,3 +10,10 @@ class MapTile(val x:Int,val y:Int){
     (x*mapTileSizeX,y*mapTileSizeY)
   }
 }
+
+object MapTile {
+  def apply(x:Int, y:Int): MapTile = {
+    new MapTile(x,y)
+  }
+}
+

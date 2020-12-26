@@ -49,7 +49,6 @@ class MapScreen() extends Screen{
 
   stage.addActor(turnLabel)
 
-
   val mapInputProcessor: InputProcessor = new InputProcessor() {
 
     override def touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
@@ -77,8 +76,9 @@ class MapScreen() extends Screen{
     override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
   }
 
-  mapData.addStaticEntity(new Town(new MapTile(10,10)))
-  mapData.addStaticEntity(new TownQuarter(new MapTile(12,10)))
+  val hopeTown = new Town(MapTile(10,10))
+
+  mapData.addStaticEntity(hopeTown)
 
   for (
     x <- 0 until mapWidthTiles;
@@ -105,13 +105,11 @@ class MapScreen() extends Screen{
 
 
   override def show(): Unit = {
-
     val multiplexer = new InputMultiplexer()
     multiplexer.addProcessor(stage)
     multiplexer.addProcessor(mapInputProcessor)
     Gdx.input.setInputProcessor(multiplexer)
     centerScreen()
-
   }
 
   def getMapMovementVector(keys:List[Int], directionToReturn:Int):Option[Int]={
@@ -151,6 +149,10 @@ class MapScreen() extends Screen{
 
       mapData.staticEntities.foreach(entity=>{
         batch.draw(entity.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
+        //rendering children
+        entity.children.foreach(c=>{
+          batch.draw(c.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
+        })
       })
 
     })
@@ -181,17 +183,6 @@ class MapScreen() extends Screen{
   override def dispose(): Unit = {
     map.dispose()
     renderer.dispose()
-  }
-
-  def getBorderTiles(bottomLeftCoord:(Int,Int),sizeInTiles:(Int,Int)):List[MapTile] = {
-    val (fromX,toX) = (bottomLeftCoord._1, bottomLeftCoord._1 + sizeInTiles._1)
-    val (fromY,toY) = (bottomLeftCoord._2, bottomLeftCoord._2 + sizeInTiles._2)
-    val borderTiles = for {
-      x <- fromX to toX
-      y <- fromY to toY
-    } yield new MapTile(x,y)
-
-    borderTiles.toList
   }
 
   def updateTurn(): Unit ={
