@@ -1,6 +1,6 @@
 package com.anton.nuclearnation.map.entities
 
-import com.anton.nuclearnation.map.MapTile
+import com.anton.nuclearnation.map.{MapTile, mapTileSizeX, mapTileSizeY}
 
 import scala.collection.mutable.ListBuffer
 
@@ -22,11 +22,33 @@ trait StaticMapEntity {
   def size:(Int,Int)
 
   /**
-   * Adds child entity to this entity and makes sure it's not outside the map
+   * Adds child entity to this entity
    * @param entity
    */
   def addChild(entity: StaticMapEntity): Unit ={
     children += entity
+  }
+
+  /**
+   * Returns the list of bordering tiles minus illegitimate ones (outside of map borders)
+   */
+  def borderingTiles:List[MapTile] = {
+    val (fromX, fromY) = (bottomLeftTile.x - 1, bottomLeftTile.y - 1)
+    val (toX, toY) = (bottomLeftTile.x + size._1, bottomLeftTile.y + size._2)
+
+    //calculating total tiles (one tile bigger on every dimenstion, meaning if the original entity size is 1 then it will return 3x3 cells)
+    val totalTiles = {
+      for {
+        x <- fromX to toX
+        y <- fromY to toY
+      } yield new MapTile(x, y)
+    }.toList
+
+    //removing self owned tiles from the total tiles (from 9 cells calculating earlier, remove the one cell that actually belongs to the entity itself)
+    //after that, remove illegitimate cells (cells outside of map borders)
+    totalTiles
+      .filterNot(selfOwnedTiles.toSet)
+      .filter(c => c.x > 0 && c.x < mapTileSizeX && c.y > 0 && c.y < mapTileSizeY)
   }
 
   /**

@@ -19,12 +19,7 @@ import com.badlogic.gdx.utils.viewport.StretchViewport
 
 class MapScreen() extends Screen{
 
-  var turn = 0
-
   val map = new TiledMap
-
-  val mapWidthTiles = 60
-  val mapHeightTiles = 60
 
   val desertTileTexture: Texture = assetManager.get("desert_tile-64x64.png",classOf[Texture])
 //  val ruinedBuildingTexture = assetManager.get("ruined-building.png",classOf[Texture])
@@ -33,22 +28,14 @@ class MapScreen() extends Screen{
   val desertTileCell:Cell = new Cell
   val region = new TextureRegion(desertTileTexture)
 
+
   desertTileCell.setTile(new StaticTiledMapTile(region))
-
-  val mapData = new MapData(mapWidthTiles,mapHeightTiles)
-
   val skin: Skin = assetManager.get("data/commodore64/skin/uiskin.json",classOf[Skin])
-
   val stage = new Stage(new StretchViewport(1600,960,new OrthographicCamera()))
   val camera: OrthographicCamera = stage.getCamera.asInstanceOf[OrthographicCamera]
-
   val centerOnCapitalButton = new TextButton("Re-center",skin)
   val pauseButton = new TextButton("Pause",skin)
-
   val turnLabel = new TextButton(s"Turn: $turn",skin) //using Button because it looks better with this skin
-
-  stage.addActor(turnLabel)
-
   val mapInputProcessor: InputProcessor = new InputProcessor() {
 
     override def touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
@@ -76,7 +63,9 @@ class MapScreen() extends Screen{
     override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
   }
 
+  stage.addActor(turnLabel)
   val hopeTown = new Town(MapTile(10,10))
+  val renderer = new OrthogonalTiledMapRenderer(map, 1.0f)
 
   mapData.addStaticEntity(hopeTown)
 
@@ -88,21 +77,11 @@ class MapScreen() extends Screen{
 
   }
   map.getLayers.add(desertLayer)
-
-  val renderer = new OrthogonalTiledMapRenderer(map, 1.0f)
-
   val mapWidthPixels: Int = desertLayer.getWidth * desertLayer.getTileWidth
   val mapHeightPixels: Int = desertLayer.getHeight * desertLayer.getTileHeight
-
+  var turn = 0
   var cameraCenterX = 0f
   var cameraCenterY = 0f
-
-  def centerScreen(): Unit ={
-    cameraCenterX = camera.viewportWidth/2
-    cameraCenterY = camera.viewportHeight/2
-  }
-
-
 
   override def show(): Unit = {
     val multiplexer = new InputMultiplexer()
@@ -112,11 +91,9 @@ class MapScreen() extends Screen{
     centerScreen()
   }
 
-  def getMapMovementVector(keys:List[Int], directionToReturn:Int):Option[Int]={
-    keys.foreach(key=>{
-      if (Gdx.input.isKeyPressed(key)) return Some(directionToReturn)
-    })
-    None
+  def centerScreen(): Unit ={
+    cameraCenterX = camera.viewportWidth/2
+    cameraCenterY = camera.viewportHeight/2
   }
 
   override def render(delta: Float): Unit = {
@@ -148,10 +125,9 @@ class MapScreen() extends Screen{
       renderer.renderTileLayer(desertLayer)
 
       mapData.staticEntities.foreach(entity=>{
-        batch.draw(entity.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
-        //rendering children
-        entity.children.foreach(c=>{
-          batch.draw(c.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
+        val entityAndChildren = List(entity) ++ entity.children
+        entityAndChildren.foreach(e=>{
+          batch.draw(e.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
         })
       })
 
@@ -165,17 +141,18 @@ class MapScreen() extends Screen{
 
 }
 
-  case class ActorMapCoords(tileX:Int,tileY:Int)
-
-
+  def getMapMovementVector(keys:List[Int], directionToReturn:Int):Option[Int]={
+    keys.foreach(key=>{
+      if (Gdx.input.isKeyPressed(key)) return Some(directionToReturn)
+    })
+    None
+  }
 
   override def resize(width: Int, height: Int): Unit = {}
 
   override def pause(): Unit = {}
 
   override def resume(): Unit = {}
-
-
 
   override def hide(): Unit = {
   }
@@ -190,5 +167,7 @@ class MapScreen() extends Screen{
     turnLabel.setText(s"Turn: $turn")
     turnLabel.setWidth(turnLabel.getPrefWidth)
   }
+
+  case class ActorMapCoords(tileX:Int,tileY:Int)
 
 }
