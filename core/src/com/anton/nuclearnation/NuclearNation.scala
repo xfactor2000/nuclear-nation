@@ -1,5 +1,6 @@
 package com.anton.nuclearnation
 
+import com.anton.nuclearnation.map.MapScreen
 import com.badlogic.gdx.Game
 import com.badlogic.gdx.assets.AssetManager
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver
@@ -12,7 +13,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin
 
 class NuclearNation extends Game {
   var batch:SpriteBatch = _
-  val assetManager = new AssetManager
 
   val resolver = new InternalFileHandleResolver
   val fontGenerator = new FreeTypeFontGeneratorLoader(resolver)
@@ -24,7 +24,7 @@ class NuclearNation extends Game {
   lazy val skin = assetManager.get("data/commodore64/skin/uiskin.json",classOf[Skin])
   val gameFontParam = new FreeTypeFontLoaderParameter()
 
-  lazy val mapScreen = new MapScreen(this)
+  lazy val mapScreen = new MapScreen()
 
   override def create(): Unit = {
     batch = new SpriteBatch
