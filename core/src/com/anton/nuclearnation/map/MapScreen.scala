@@ -1,42 +1,37 @@
-package com.anton.nuclearnation
+package com.anton.nuclearnation.map
 
 import com.anton.nuclearnation.Extensions._
-import com.anton.nuclearnation.MapScreen._
-import com.anton.nuclearnation.map.{MapData, MapTile}
+import com.anton.nuclearnation.{assetManager}
+import com.anton.nuclearnation.map.entities.{Hamlet, StaticMapEntity}
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx._
 import com.badlogic.gdx.graphics._
 import com.badlogic.gdx.graphics.g2d.TextureRegion
-import com.badlogic.gdx.maps.tiled.{TiledMap, TiledMapTileLayer}
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer
 import com.badlogic.gdx.maps.tiled.tiles.StaticTiledMapTile
+import com.badlogic.gdx.maps.tiled.{TiledMap, TiledMapTileLayer}
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.{Skin, TextButton}
 import com.badlogic.gdx.utils.viewport.StretchViewport
 
 
-class MapScreen(game: NuclearNation) extends Screen{
+class MapScreen() extends Screen{
 
-  val assetManager = game.assetManager
   var turn = 0
 
   val map = new TiledMap
-  val layers = map.getLayers
 
   val mapWidthTiles = 60
   val mapHeightTiles = 60
 
-  val mapTileSize: Int = 32
-
-  val desertTileTexture = assetManager.get("desert_tile-64x64.png",classOf[Texture])
+  val desertTileTexture: Texture = assetManager.get("desert_tile-64x64.png",classOf[Texture])
 //  val ruinedBuildingTexture = assetManager.get("ruined-building.png",classOf[Texture])
   val desertLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
 //  val townLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
   val desertTileCell:Cell = new Cell
   val region = new TextureRegion(desertTileTexture)
-  val hamletImage: Texture = assetManager.get("settlements/house_active-64x64.png",classOf[Texture])
   val townQuarterImage: Texture = assetManager.get("settlements/house_active-32x32.png",classOf[Texture])
   desertTileCell.setTile(new StaticTiledMapTile(region))
 
@@ -82,7 +77,7 @@ class MapScreen(game: NuclearNation) extends Screen{
     override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
   }
 
-
+  mapData.addStaticEntity(new Hamlet(new MapTile(10,10)))
 
   for (
     x <- 0 until mapWidthTiles;
@@ -95,8 +90,8 @@ class MapScreen(game: NuclearNation) extends Screen{
 
   val renderer = new OrthogonalTiledMapRenderer(map, 1.0f)
 
-  val mapWidthPixels: Int = (desertLayer.getWidth * desertLayer.getTileWidth )
-  val mapHeightPixels: Int = (desertLayer.getHeight * desertLayer.getTileHeight)
+  val mapWidthPixels: Int = desertLayer.getWidth * desertLayer.getTileWidth
+  val mapHeightPixels: Int = desertLayer.getHeight * desertLayer.getTileHeight
 
   var cameraCenterX = 0f
   var cameraCenterY = 0f
@@ -149,10 +144,14 @@ class MapScreen(game: NuclearNation) extends Screen{
     camera.update()
     renderer.setView(camera)
 
+    //drawing static entities
     renderer.getBatch.drawBatch(batch=>{
       renderer.renderTileLayer(desertLayer)
-      //drawing the quarters
-      batch.draw(hamletImage,10 * mapTileSize,10 * mapTileSize)
+
+      mapData.staticEntities.foreach(entity=>{
+        batch.draw(entity.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
+      })
+
     })
 
     val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - turnLabel.getPrefWidth,turnLabel.getPrefHeight,0))
@@ -194,67 +193,10 @@ class MapScreen(game: NuclearNation) extends Screen{
     borderTiles.toList
   }
 
-  def getSizeInTiles(t:Texture, tileSize:Int = mapTileSize): (Int,Int) = {
-    (t.getWidth / tileSize,t.getHeight/tileSize)
-  }
-
   def updateTurn(): Unit ={
     turn +=1
     turnLabel.setText(s"Turn: $turn")
     turnLabel.setWidth(turnLabel.getPrefWidth)
-
-    //adding new house each turn
-//    def findNeighboringEmptyCell(sourceCell:MapCellData):Option[MapCellData] = {
-//      val surroundingCells = List(
-//        mapData.getCell(sourceCell.x-1,sourceCell.y),
-//        mapData.getCell(sourceCell.x+1,sourceCell.y),
-//        mapData.getCell(sourceCell.x,sourceCell.y-1),
-//        mapData.getCell(sourceCell.x,sourceCell.y+1)
-//      )
-//        .filter(c=>c.isDefined)
-//        .map(c=>c.get)
-//        .filter(c=> c.x >0 && c.y > 0 && c.x< mapWidthTiles && c.y < mapHeightTiles)
-//      val random = new Random()
-//      val emptyCells = surroundingCells.filter(c=>c.location.isEmpty)
-//      if (emptyCells.isEmpty ) {
-//        random.shuffle(surroundingCells).foreach(c=>{
-//          val result = findNeighboringEmptyCell(c)
-//          result match {
-//            case Some(c) => return Some(c)
-//            case None =>
-//          }
-//        })
-//        None
-//      } else {
-//        val randomCell = emptyCells(random.nextInt(emptyCells.length))
-//        Some(randomCell)
-//      }
-//
-//
-//    }
-//    val cell = findNeighboringEmptyCell(hamletCell)
-//    cell.get.location = Some(TownQuarter())
-//    val townRegion = new TextureRegion(hamletImage)
-//    val townTile = new StaticTiledMapTile(townRegion)
-//    val townCell = new Cell
-//    townCell.setTile(townTile)
-//    townLayer.setCell(cell.get.x,cell.get.y,townCell)
-
-
   }
-
-}
-
-object MapScreen{
-
-
-  case class MapClickInfo(pixelX:Float, pixelY: Float, tileX:Int,tileY:Int)
-
-
-  sealed abstract class MapLocation(){
-//    def name:String
-  }
-  case class TownQuarter() extends MapLocation
-  case class HamletQuarter() extends MapLocation
 
 }

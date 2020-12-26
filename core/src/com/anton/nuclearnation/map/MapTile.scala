@@ -6,7 +6,7 @@ package com.anton.nuclearnation.map
  * @param y
  */
 class MapTile(val x:Int,val y:Int){
-  def getBottomLeftScreenCoords:(Int,Int)= {
-    (x*32,y*32)
+  def bottomLeftScreenCoords:(Int,Int)= {
+    (x*mapTileSizeX,y*mapTileSizeY)
   }
 }
