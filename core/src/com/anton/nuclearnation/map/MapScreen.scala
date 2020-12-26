@@ -1,8 +1,8 @@
 package com.anton.nuclearnation.map
 
 import com.anton.nuclearnation.Extensions._
-import com.anton.nuclearnation.{assetManager}
-import com.anton.nuclearnation.map.entities.{Hamlet, StaticMapEntity}
+import com.anton.nuclearnation.assetManager
+import com.anton.nuclearnation.map.entities.{StaticMapEntity, Town, TownQuarter}
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx._
 import com.badlogic.gdx.graphics._
@@ -32,7 +32,7 @@ class MapScreen() extends Screen{
 //  val townLayer = new TiledMapTileLayer(mapHeightTiles, mapWidthTiles, desertTileTexture.getWidth, desertTileTexture.getHeight)
   val desertTileCell:Cell = new Cell
   val region = new TextureRegion(desertTileTexture)
-  val townQuarterImage: Texture = assetManager.get("settlements/house_active-32x32.png",classOf[Texture])
+
   desertTileCell.setTile(new StaticTiledMapTile(region))
 
   val mapData = new MapData(mapWidthTiles,mapHeightTiles)
@@ -77,7 +77,8 @@ class MapScreen() extends Screen{
     override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
   }
 
-  mapData.addStaticEntity(new Hamlet(new MapTile(10,10)))
+  mapData.addStaticEntity(new Town(new MapTile(10,10)))
+  mapData.addStaticEntity(new TownQuarter(new MapTile(12,10)))
 
   for (
     x <- 0 until mapWidthTiles;

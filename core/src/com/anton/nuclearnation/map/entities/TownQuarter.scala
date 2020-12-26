@@ -1,10 +1,11 @@
 package com.anton.nuclearnation.map.entities
 import com.anton.nuclearnation.map.MapTile
 
-class Hamlet(val bottomLeftTile: MapTile) extends StaticMapEntity {
-
+class TownQuarter(val bottomLeftTile:MapTile) extends StaticMapEntity {
   /**
    * Provides size X*Y size in cells
+   *
+   * @return
    */
-  override def size: (Int, Int) = (4,4)
+  override def size: (Int, Int) = (1,1)
 }
