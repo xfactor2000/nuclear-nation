@@ -20,6 +20,8 @@ import com.badlogic.gdx.utils.viewport.StretchViewport
 class MapScreen() extends Screen{
 
   val map = new TiledMap
+  var day = 0
+  var isPaused = false
 
   val desertTileTexture: Texture = assetManager.get("desert_tile-64x64.png",classOf[Texture])
 //  val ruinedBuildingTexture = assetManager.get("ruined-building.png",classOf[Texture])
@@ -35,7 +37,7 @@ class MapScreen() extends Screen{
   val camera: OrthographicCamera = stage.getCamera.asInstanceOf[OrthographicCamera]
   val centerOnCapitalButton = new TextButton("Re-center",skin)
   val pauseButton = new TextButton("Pause",skin)
-  val turnLabel = new TextButton(s"Turn: $turn",skin) //using Button because it looks better with this skin
+  val dayLabel = new TextButton(s"Day: $day",skin) //using Button because it looks better with this skin
   val mapInputProcessor: InputProcessor = new InputProcessor() {
 
     override def touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean = {true}
@@ -44,8 +46,8 @@ class MapScreen() extends Screen{
 
     override def keyUp(keycode: Int): Boolean = {
       keycode match {
-        case Input.Keys.ENTER=>
-          updateTurn()
+        case Input.Keys.SPACE=>
+          pauseUnpause()
           true
         case _=> false
       }
@@ -63,7 +65,7 @@ class MapScreen() extends Screen{
     override def scrolled(amountX: Float, amountY: Float): Boolean = {true}
   }
 
-  stage.addActor(turnLabel)
+  stage.addActor(dayLabel)
   val hopeTown = new Town(MapTile(10,10))
   val renderer = new OrthogonalTiledMapRenderer(map, 1.0f)
 
@@ -79,7 +81,7 @@ class MapScreen() extends Screen{
   map.getLayers.add(desertLayer)
   val mapWidthPixels: Int = desertLayer.getWidth * desertLayer.getTileWidth
   val mapHeightPixels: Int = desertLayer.getHeight * desertLayer.getTileHeight
-  var turn = 0
+  var lastDelta = 0f
   var cameraCenterX = 0f
   var cameraCenterY = 0f
 
@@ -133,8 +135,19 @@ class MapScreen() extends Screen{
 
     })
 
-    val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - turnLabel.getPrefWidth,turnLabel.getPrefHeight,0))
-    turnLabel.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
+    //updating day every 5 seconds
+    lastDelta += delta
+    if (lastDelta > 1){
+      print(lastDelta)
+      day +=1
+      lastDelta = 0
+    }
+
+    dayLabel.setText(s"Day: $day")
+    dayLabel.setWidth(dayLabel.getPrefWidth)
+
+    val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - dayLabel.getPrefWidth,dayLabel.getPrefHeight,0))
+    dayLabel.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
 
     stage.act(delta)
     stage.draw()
@@ -162,12 +175,11 @@ class MapScreen() extends Screen{
     renderer.dispose()
   }
 
-  def updateTurn(): Unit ={
-    turn +=1
-    turnLabel.setText(s"Turn: $turn")
-    turnLabel.setWidth(turnLabel.getPrefWidth)
+  def pauseUnpause(): Unit ={
+    isPaused = !isPaused
   }
 
   case class ActorMapCoords(tileX:Int,tileY:Int)
+
 
 }
