@@ -135,19 +135,20 @@ class MapScreen() extends Screen{
 
     })
 
-    //updating day every 5 seconds
-    lastDelta += delta
-    if (lastDelta > 1){
-      print(lastDelta)
-      day +=1
-      lastDelta = 0
+    //updating day every x seconds unless paused
+    if (!isPaused){
+      lastDelta += delta
+      if (lastDelta > 1){
+        day +=1
+        lastDelta = 0
+      }
+
+      dayLabel.setText(s"Day: $day")
+      dayLabel.setWidth(dayLabel.getPrefWidth)
     }
 
-    dayLabel.setText(s"Day: $day")
-    dayLabel.setWidth(dayLabel.getPrefWidth)
-
-    val scrapLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - dayLabel.getPrefWidth,dayLabel.getPrefHeight,0))
-    dayLabel.setPosition(scrapLabelCoords.x,scrapLabelCoords.y)
+    val dayLabelCoords = camera.unproject(new Vector3(stage.getViewport.getScreenWidth - dayLabel.getPrefWidth,dayLabel.getPrefHeight,0))
+    dayLabel.setPosition(dayLabelCoords.x,dayLabelCoords.y)
 
     stage.act(delta)
     stage.draw()
