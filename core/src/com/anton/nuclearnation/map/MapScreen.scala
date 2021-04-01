@@ -7,6 +7,8 @@ import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx._
 import com.badlogic.gdx.graphics._
 import com.badlogic.gdx.graphics.g2d.TextureRegion
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer
 import com.badlogic.gdx.maps.tiled.tiles.StaticTiledMapTile
@@ -129,11 +131,26 @@ class MapScreen() extends Screen{
       mapData.staticEntities.foreach(entity=>{
         val entityAndChildren = List(entity) ++ entity.children
         entityAndChildren.foreach(e=>{
-          batch.draw(e.mapImage,entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
+          val shapeRenderer = new ShapeRenderer()
+          val (x,y) = (entity.bottomLeftTile.x * mapTileSizeX,entity.bottomLeftTile.y * mapTileSizeY)
+          batch.draw(e.mapImage,x,y)
         })
       })
 
     })
+    Gdx.gl.glEnable(GL20.GL_BLEND)
+    Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
+    val shapeRenderer = new ShapeRenderer()
+    shapeRenderer.setProjectionMatrix(camera.combined)
+    shapeRenderer.begin(ShapeType.Filled);
+    shapeRenderer.setColor(new Color(0, 1, 0, 0.2f))
+    shapeRenderer.circle(100, 100, 500);
+    shapeRenderer.circle(200, 200, 500);
+    shapeRenderer.circle(250, 250, 500);
+    shapeRenderer.end();
+    Gdx.gl.glDisable(GL20.GL_BLEND);
+
+
 
     //updating day every x seconds unless paused
     if (!isPaused){

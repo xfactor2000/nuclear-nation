@@ -3,7 +3,7 @@ import scalalib._
 
 def projectScalaVersion = "2.13.5"
 object core extends ScalaModule {
-  val gdxVersion="1.9.12"
+  val gdxVersion="1.9.14"
 
   override def ivyDeps = Agg(
     ivy"com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion",
